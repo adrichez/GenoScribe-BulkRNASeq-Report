@@ -96,5 +96,5 @@ Dockerfile linguist-language=Dockerfile
 #-----------------------------------------------------------------------------------------------------------
 
 # JavaScript libraries in pipelines
-report/**/4-javascript/embeddings_web_reduced.js linguist-vendored
-report/**/4-javascript/responses.js linguist-vendored
+docs/**/4-javascript/embeddings_web_reduced.js linguist-vendored
+docs/**/4-javascript/responses.js linguist-vendored

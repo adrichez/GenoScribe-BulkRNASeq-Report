@@ -1,0 +1,10 @@
+stringr
+glue
+fs
+dplyr
+htmlwidgets
+readxl
+DT
+htmltools
+ggplot2
+plotly

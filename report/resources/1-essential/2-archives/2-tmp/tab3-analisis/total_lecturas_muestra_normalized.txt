@@ -1,0 +1,6 @@
+muestra	condicion	total_lecturas
+WT_Cd0_Rep3	px-ck-C	1509610
+WT_Cd0_Rep1	px-ck-C	1341163
+PX_Cd0_Rep3	pex11a-C	1159654
+PX_Cd0_Rep2	pex11a-C	1139706
+PX_Cd0_Rep1	pex11a-C	1089125

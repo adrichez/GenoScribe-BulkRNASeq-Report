@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.25">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Bulk RNA-Seq Report</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../../../">
+<script src="../../../../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../../../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../../../site_libs/quarto-html/quarto-syntax-highlighting-54c8f25464f32f8783bd446cee98020d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../../../site_libs/bootstrap/bootstrap-c27fce070f9e1faf5b65ec12c04f7688.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg">
+<link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+
+<link rel="stylesheet" href="../../../../../../resources/1-essential/3-scripts/3-css/styles.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../../../../../index.html" class="navbar-brand navbar-brand-logo">
+    </a>
+    <a class="navbar-brand" href="../../../../../../index.html">
+    <span class="navbar-title"><img class="brand-logo" src="../../../../../../resources/1-essential/1-images/icons/ipbln.png"> <a class="brand-text" href="https://www.ipb.csic.es/servicios/Bioinformatica/index.html">IPBLN</a></span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../../../../../index.html"> <i class="bi bi-house" role="img">
+</i> 
+<span class="menu-text">Inicio</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab1-metodologia/metodologia.html"> <i class="bi bi-wrench" role="img">
+</i> 
+<span class="menu-text">Metodología</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab2-resumen/resumen.html"> <i class="bi bi-clipboard-data" role="img">
+</i> 
+<span class="menu-text">Resumen</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-análisis" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="bi bi-bar-chart" role="img">
+</i> 
+ <span class="menu-text">Análisis</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-análisis">    
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/0-contexto.html">
+ <span class="dropdown-text">➤ Introducción contextual</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/1-revision-inicial.html">
+ <span class="dropdown-text">1. Revisión inicial de muestras y metadatos</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/2-evaluacion-calidad.html">
+ <span class="dropdown-text">2. Evaluación de calidad de las lecturas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/3-alineamiento.html">
+ <span class="dropdown-text">3. Alineamiento de las lecturas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/4-cuantificacion.html">
+ <span class="dropdown-text">4. Cuantificación de la expresión génica</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5-analisis-estadistico.html">
+ <span class="dropdown-text">5. Análisis estadístico de la expresión génica</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../../../../resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/6-conclusiones.html">
+ <span class="dropdown-text">6. Conclusiones y perspectivas</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-layout-custom page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+<!-- main -->
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Bulk RNA-Seq Report</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta...">
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!-- Incluir Font Awesome -->
+<p><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"></p>
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS | 2. EVALUACIÓN DE LA CALIDAD DE LAS LECTURAS -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<div class="informe-titulo-tab">
+<h1>
+Pestaña
+</h1>
+<h2>
+Análisis bioinformático completo
+</h2>
+</div>
+<div class="informe-titulo-seccion-unique">
+<h1>
+Sección 2
+</h1>
+<h2>
+Evaluación de la calidad de las lecturas
+</h2>
+</div>
+<div class="flecha-abajo">
+<p>▼</p>
+</div>
+<div class="informe-resumen">
+<h2>
+Resumen
+</h2>
+<p>
+En esta sección se presentan los resultados del control de calidad aplicado a los archivos <code>.fastq.gz</code> generados tras la secuenciación. La evaluación se ha llevado a cabo tanto a nivel global como individual, utilizando las herramientas <strong>FastQC</strong> y <strong>MultiQC</strong>, integradas tanto en el pipeline de <strong>miARma‑Seq</strong> como en el pipeline específico para este informe desarrollado con <strong>Nextflow</strong>.
+</p>
+<p>
+En primer lugar, se incluye un informe consolidado generado por <strong>MultiQC</strong>, que resume de forma interactiva los principales parámetros de calidad de todas las muestras procesadas. Este informe permite identificar patrones generales, anomalías globales o diferencias sistemáticas entre condiciones experimentales.
+</p>
+<p>
+A continuación, se muestran los informes individuales de <strong>FastQC</strong> generados automáticamente para cada muestra. Estos informes permiten una revisión más detallada por dirección de lectura (<em>Forward</em> y <em>Backward</em>) e incluyen métricas clave como la calidad por base, contenido GC, niveles de duplicación o detección de adaptadores. Cada informe se presenta embebido mediante un <code>iframe</code>, acompañado de un botón que permite visualizarlo en una pestaña independiente para facilitar su lectura.
+</p>
+<p>
+La estructura de esta sección sigue un esquema jerárquico organizado por tipo de lectura y muestra, lo que permite una navegación más clara y accesible. Además, dado que el informe ha sido diseñado para ser completamente <strong>automatizado y reproducible</strong>, los apartados correspondientes a cada muestra se generan dinámicamente a partir de los metadatos disponibles, adaptándose así a cualquier conjunto de datos experimental.
+</p>
+</div>
+<div style="height: 15px; background-color: transparent;">
+
+</div>
+<div class="titulo-toc">
+<p>Tabla de contenidos de esta sección</p>
+</div>
+
+<div class="toc">
+  <ul>
+    <li>
+      <a href="#tab3-seccion2">
+        2<span>.</span> Evaluación de la calidad de las lecturas
+      </a>
+      <ul>
+        <li>
+          <a href="#tab3-seccion2.1">
+            2.1. Análisis conjunto de todas las muestras (MultiQC)
+          </a>
+        </li>
+        <li>
+          <a href="#tab3-seccion2.2">
+            2.2. Análisis individual por muestra (FastQC)
+          </a>
+          <ul>
+            <li>
+              <a href="#tab3-seccion2.2.1">
+                2.2.1. Evaluación de calidad de lecturas Forward
+              </a>
+              <ul>
+<li><a href="#tab3-seccion2.2.1.1">2.2.1.1. Muestra: PX_Cd0_Rep1</a></li><li><a href="#tab3-seccion2.2.1.2">2.2.1.2. Muestra: PX_Cd0_Rep2</a></li><li><a href="#tab3-seccion2.2.1.3">2.2.1.3. Muestra: PX_Cd0_Rep3</a></li><li><a href="#tab3-seccion2.2.1.4">2.2.1.4. Muestra: WT_Cd0_Rep1</a></li><li><a href="#tab3-seccion2.2.1.5">2.2.1.5. Muestra: WT_Cd0_Rep2</a></li><li><a href="#tab3-seccion2.2.1.6">2.2.1.6. Muestra: WT_Cd0_Rep3</a></li>
+              </ul>
+            </li>
+            <li><a href="#tab3-seccion2.2.2">2.2.2. Evaluación de calidad de lecturas Backward</a>
+              <ul>
+<li><a href="#tab3-seccion2.2.2.1">2.2.2.1. Muestra: PX_Cd0_Rep1</a></li><li><a href="#tab3-seccion2.2.2.2">2.2.2.2. Muestra: PX_Cd0_Rep2</a></li><li><a href="#tab3-seccion2.2.2.3">2.2.2.3. Muestra: PX_Cd0_Rep3</a></li><li><a href="#tab3-seccion2.2.2.4">2.2.2.4. Muestra: WT_Cd0_Rep1</a></li><li><a href="#tab3-seccion2.2.2.5">2.2.2.5. Muestra: WT_Cd0_Rep2</a></li><li><a href="#tab3-seccion2.2.2.6">2.2.2.6. Muestra: WT_Cd0_Rep3</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#tab3-seccion2.3">2.3. Reflexiones finales sobre el control de calidad</a>
+      </li></ul>
+    </li>
+  </ul>
+</div>
+
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- REDACCIÓN -->
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<div style="height: 25px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2" class="titulo1">
+<p>2<span>.</span> Evaluación de la calidad de las lecturas</p>
+</div>
+<p>
+La calidad de las lecturas en un experimento de RNA-Seq es un factor determinante para la fiabilidad de los análisis posteriores, como el alineamiento, la cuantificación y la identificación de genes diferencialmente expresados. Por ello, uno de los primeros pasos fundamentales en cualquier pipeline de procesamiento es la evaluación de la calidad de los archivos <code>.fastq.gz</code> generados tras la secuenciación.
+</p>
+<p>
+En este estudio, el control de calidad se aplicó a <strong>todas las muestras disponibles inicialmente</strong>, independientemente de si fueron seleccionadas o no para el análisis principal. Este enfoque garantiza una evaluación exhaustiva del conjunto completo de datos, permitiendo detectar posibles problemas antes de la selección definitiva de las muestras a analizar.
+</p>
+<p>
+El control de calidad se llevó a cabo utilizando la herramienta <strong>FastQC</strong>, la cual genera informes detallados por muestra sobre diversos aspectos de la calidad de las secuencias. Posteriormente, todos estos informes individuales fueron integrados mediante <strong>MultiQC</strong>, generando un único informe resumen interactivo. Este informe consolidado permite inspeccionar de forma global y comparativa el estado de las lecturas en todas las muestras procesadas.
+</p>
+<p>
+Las métricas clave incluidas en el informe de MultiQC son, entre otras:
+</p>
+<ul>
+<li>
+Calidad de las bases a lo largo de las lecturas (per base sequence quality).
+</li>
+<li>
+Contenido de GC.
+</li>
+<li>
+Presencia de adaptadores o contaminantes.
+</li>
+<li>
+Nivel de duplicación de las secuencias.
+</li>
+<li>
+Distribución de la longitud de las lecturas.
+</li>
+</ul>
+<p>
+Estas métricas permiten identificar posibles problemas técnicos, como degradación del ARN, contaminación por adaptadores, sesgos sistemáticos u otros artefactos de la secuenciación. Esta información es esencial para tomar decisiones informadas sobre la necesidad de aplicar pasos de filtrado o recorte antes de proceder con el alineamiento.
+</p>
+<p>
+Es importante señalar que <strong>no todas las muestras presentes en el informe de MultiQC están incluidas en el análisis principal</strong>. La tabla de metadatos presentada anteriormente recoge únicamente las muestras seleccionadas para las etapas posteriores de alineamiento y cuantificación, por lo que puede haber discrepancias entre ambas.
+</p>
+<div style="height: 20px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.1" class="titulo2">
+<p>2.1. Análisis conjunto de todas las muestras (MultiQC)</p>
+</div>
+<p>
+El análisis conjunto de calidad se ha llevado a cabo mediante la herramienta <strong>MultiQC</strong>, la cual agrega y resume de forma interactiva los informes individuales generados previamente por <strong>FastQC</strong> para cada una de las muestras procesadas. Este enfoque permite visualizar en un único informe consolidado todas las métricas relevantes, facilitando la comparación entre muestras y la identificación de posibles anomalías sistemáticas, errores técnicos o patrones comunes.
+</p>
+<p>
+El informe MultiQC incluye gráficos y tablas que resumen aspectos clave como la calidad por base, el contenido GC, la longitud de las lecturas, la presencia de adaptadores o contaminantes y otros indicadores de calidad. Esta visión global resulta especialmente útil para tomar decisiones sobre la limpieza y filtrado de las lecturas antes del alineamiento.
+</p>
+<p>
+A continuación, se muestra el informe interactivo integrado directamente en este documento. También se proporciona un botón para abrirlo en una nueva pestaña, lo cual permite una visualización más cómoda y detallada si se desea explorar el informe en mayor profundidad.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/2-fastqc-report/results-multiqc-mary/multiqc_report.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/2-fastqc-report/results-multiqc-mary/multiqc_report.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de MultiQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/2-fastqc-report/results-multiqc-mary/multiqc_report.html" download="multiqc_report.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<p>
+En la siguiente sección se detallará el análisis individual de la calidad de cada muestra, diferenciando entre lecturas <em>forward</em> y <em>backward</em>, mediante la incorporación directa de los informes <strong>FastQC</strong> individuales generados automáticamente por <strong>miARma‑Seq</strong>.
+</p>
+<div style="height: 20px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2" class="titulo2">
+<p>2.2. Análisis individual por muestra (FastQC)</p>
+</div>
+<p>
+Tras la evaluación conjunta mediante <strong>MultiQC</strong>, esta subsección se centra en el análisis individualizado de cada una de las muestras a través de los informes generados por <strong>FastQC</strong>. Este enfoque permite inspeccionar con mayor nivel de detalle los distintos parámetros de calidad, identificando posibles incidencias específicas que podrían no ser evidentes en el análisis global.
+</p>
+<p>
+<strong>FastQC</strong> es una herramienta ampliamente utilizada para el control de calidad de datos de secuenciación masiva. Proporciona una evaluación visual e interactiva de aspectos fundamentales como la calidad por base a lo largo de las lecturas, el contenido de GC, la presencia de adaptadores, la sobre-representación de secuencias, la longitud de las lecturas o el nivel de duplicación. Esta información resulta clave para valorar la idoneidad de los datos brutos antes de aplicar pasos de filtrado, recorte o alineamiento.
+</p>
+<p>
+En este informe, cada muestra dispone de una sección dedicada organizada por tipo de lectura <em>(forward y backward)</em>, donde se presenta su correspondiente informe <code>.html</code> de FastQC. Los informes han sido generados automáticamente por el pipeline <strong>miARma‑Seq</strong> y se integran en este documento mediante una ventana interactiva para facilitar su visualización directa, junto con un botón de acceso para visualizarlo con más detalle en pestaña nueva.
+</p>
+<p>
+Todos los informes individuales utilizados para generar el resumen de MultiQC se encontraban almacenados en el siguiente directorio en el momento de la generación de este informe:
+</p>
+<p><code>/workspace/data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results</code></p>
+<p>
+A continuación, se muestra el listado completo de los archivos de salida generados por <code>FastQC</code> para cada una de las muestras procesadas. Para cada muestra se generan dos archivos principales: un informe en formato <code>.html</code>, que ofrece una visualización interactiva de los resultados del control de calidad, y un archivo comprimido <code>.zip</code>, que contiene los archivos fuente utilizados para construir dicho informe, incluyendo datos tabulados, gráficos en formato <code>.png</code> y un resumen en texto plano.
+</p>
+<p>
+Aunque es posible acceder a estos archivos directamente desde el visor interactivo que se presenta a continuación, se recomienda utilizar las secciones específicas por muestra situadas más abajo. En dichas secciones, los informes <code>.html</code> se integran directamente en el documento mediante <code>iframe</code>, junto con un botón de acceso para su visualización ampliada. Además, se proporciona contexto adicional para facilitar la interpretación de los resultados individuales.
+</p>
+<div class="box-files">
+<ul>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R1_fastqc.html" target="_blank">PX_Cd0_Rep1_R1_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R1_fastqc.zip" target="_blank">PX_Cd0_Rep1_R1_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R2_fastqc.html" target="_blank">PX_Cd0_Rep1_R2_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R2_fastqc.zip" target="_blank">PX_Cd0_Rep1_R2_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R1_fastqc.html" target="_blank">PX_Cd0_Rep2_R1_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R1_fastqc.zip" target="_blank">PX_Cd0_Rep2_R1_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R2_fastqc.html" target="_blank">PX_Cd0_Rep2_R2_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R2_fastqc.zip" target="_blank">PX_Cd0_Rep2_R2_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R1_fastqc.html" target="_blank">PX_Cd0_Rep3_R1_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R1_fastqc.zip" target="_blank">PX_Cd0_Rep3_R1_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R2_fastqc.html" target="_blank">PX_Cd0_Rep3_R2_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R2_fastqc.zip" target="_blank">PX_Cd0_Rep3_R2_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R1_fastqc.html" target="_blank">WT_Cd0_Rep1_R1_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R1_fastqc.zip" target="_blank">WT_Cd0_Rep1_R1_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R2_fastqc.html" target="_blank">WT_Cd0_Rep1_R2_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R2_fastqc.zip" target="_blank">WT_Cd0_Rep1_R2_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R1_fastqc.html" target="_blank">WT_Cd0_Rep2_R1_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R1_fastqc.zip" target="_blank">WT_Cd0_Rep2_R1_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R2_fastqc.html" target="_blank">WT_Cd0_Rep2_R2_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R2_fastqc.zip" target="_blank">WT_Cd0_Rep2_R2_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R1_fastqc.html" target="_blank">WT_Cd0_Rep3_R1_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R1_fastqc.zip" target="_blank">WT_Cd0_Rep3_R1_fastqc.zip</a>
+</li>
+<li class="file-html">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R2_fastqc.html" target="_blank">WT_Cd0_Rep3_R2_fastqc.html</a>
+</li>
+<li class="file-zip">
+<a href="file://../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R2_fastqc.zip" target="_blank">WT_Cd0_Rep3_R2_fastqc.zip</a>
+</li>
+</ul>
+</div>
+<p style="text-align:center;">
+<a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results" target="_blank" class="boton-files"> <i class="fa-solid fa-folder-open"></i> Explorar los archivos de la carpeta “Pre_fastqc_results” aquí </a>
+</p>
+<p>
+Así, estos informes individuales generados por <strong>FastQC</strong> ofrecen una evaluación visual e interactiva de diversos aspectos clave de la calidad de las lecturas de secuenciación. Cada informe está estructurado en módulos que resumen métricas específicas, facilitando así la identificación de posibles problemas técnicos o artefactos introducidos durante la preparación de las librerías o el proceso de secuenciación.
+</p>
+<div class="divider">
+
+</div>
+<p>
+A continuación se describe brevemente la información incluida en estos informes, accesibles, como ya hemos comentado, desde el visor interactivo anterior o más adelante desde cada apartado específico.
+</p>
+<ul>
+<li>
+<strong>Basic Statistics [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Información general sobre las secuencias, incluyendo el número total de lecturas, su longitud media y el contenido GC. Estos parámetros permiten confirmar que los datos cumplen con los criterios básicos de calidad esperados por la plataforma de secuenciación.
+</li>
+<li>
+<strong>Per base sequence quality [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Evalúa la calidad de las bases en cada posición de las lecturas. Una baja calidad al principio o final de las lecturas puede requerir recorte (trimming) para evitar errores en etapas posteriores.
+</li>
+<li>
+<strong>Per tile sequence quality [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Detecta anomalías en regiones específicas del flujo óptico del secuenciador. Problemas en este módulo pueden indicar fallos mecánicos o de iluminación que afectan localmente la calidad.
+</li>
+<li>
+<strong>Per sequence quality scores [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Muestra la distribución de puntuaciones de calidad para todas las lecturas. Una alta proporción de lecturas con baja calidad puede comprometer el análisis.
+</li>
+<li>
+<strong>Per base sequence content [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Analiza la proporción de nucleótidos (A, T, G, C) en cada posición. Desequilibrios importantes pueden reflejar sesgos de la librería o contaminación.
+</li>
+<li>
+<strong>Per sequence GC content [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Evalúa el contenido GC promedio por lectura. Desviaciones respecto al esperado para el organismo estudiado pueden indicar presencia de contaminantes o problemas en la preparación de la librería.
+</li>
+<li>
+<strong>Sequence Length Distribution [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Muestra la distribución de longitudes de las lecturas. Una distribución uniforme o acorde con el protocolo indica buena calidad, mientras que distribuciones anómalas pueden sugerir errores en el proceso de fragmentación o secuenciación.
+</li>
+<li>
+<strong>Sequence Duplication Levels [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Informa sobre la proporción de lecturas duplicadas. Un alto nivel puede deberse a sobre-secuenciación, baja complejidad de la muestra o problemas en la PCR.
+</li>
+<li>
+<strong>Overrepresented sequences [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Identifica secuencias que aparecen con frecuencia anormalmente alta, como adaptadores no eliminados, contaminantes o secuencias ribosomales.
+</li>
+<li>
+<strong>Adapter Content [<span style="color: green;">PASS</span> | <span style="color: orange;">WARNING</span> | <span style="color: red;">FAIL</span>]</strong>: Detecta la presencia de secuencias adaptadoras dentro de las lecturas. Si se detectan, es necesario aplicar un paso de recorte (trimming) antes de continuar con el análisis.
+</li>
+</ul>
+<p>
+Cada módulo es evaluado individualmente y clasificado como <span style="color: green;"><strong>PASS</strong></span>, <span style="color: orange;"><strong>WARNING</strong></span> o <span style="color: red;"><strong>FAIL</strong></span>. Un resultado <strong>PASS</strong> indica que el módulo cumple con los criterios de calidad recomendados. <strong>WARNING</strong> señala que se ha detectado una desviación leve o moderada que podría afectar algunos análisis dependiendo de la sensibilidad del downstream. <strong>FAIL</strong>, en cambio, indica problemas importantes que deberían ser corregidos o, al menos, tenidos en cuenta antes de continuar con el procesamiento de los datos.
+</p>
+<p>
+Dicho esto, en las siguientes subsecciones se analizarán en detalle los resultados de calidad, distinguiendo entre lecturas <em>forward</em> y <em>backward</em>. Dentro de cada una, se presentará el informe individual correspondiente a cada muestra, integrado directamente en el documento para facilitar su consulta. Esta estructura permite una revisión ordenada y completa del estado de las lecturas, asegurando que cada muestra sea evaluada con el nivel de detalle necesario antes de proceder con las etapas posteriores del análisis.
+</p>
+<div style="height: 15px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1" class="titulo3">
+<p>2.2.1. Evaluación de calidad de lecturas Forward</p>
+</div>
+<p>
+En este apartado se muestran los resultados del análisis de calidad correspondientes a las lecturas <strong>forward</strong> <em>(read 1)</em> de cada una de las muestras. Estas lecturas representan el primer extremo de los fragmentos secuenciados en protocolos <em>paired-end</em>, y su calidad es especialmente relevante para asegurar una alineación precisa y una cuantificación fiable en los pasos posteriores del análisis transcriptómico.
+</p>
+<p>
+A continuación, se incluyen las evaluaciones individuales para cada muestra, organizadas de forma estructurada para facilitar su revisión. Esta presentación permite detectar con claridad posibles incidencias específicas en las lecturas <em>read 1</em>, como caídas de calidad en posiciones terminales, contaminación por adaptadores, sesgos en la composición de bases o niveles anómalos de duplicación. Identificar estos problemas a tiempo es crucial para garantizar la robustez y validez de los resultados obtenidos en las siguientes etapas del pipeline.
+</p>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1.1" class="titulo4">
+<p>2.2.1.1. Muestra: PX_Cd0_Rep1</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>forward</strong> <em>(read 1)</em> de la muestra <strong>PX_Cd0_Rep1</strong>. Este informe permite revisar visualmente distintos aspectos de calidad relacionados con las secuencias leídas en el primer extremo de los fragmentos.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R1_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R1_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R1_fastqc.html" download="PX_Cd0_Rep1_R1_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1.1" class="titulo4">
+<p>2.2.1.1. Muestra: PX_Cd0_Rep2</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>forward</strong> <em>(read 1)</em> de la muestra <strong>PX_Cd0_Rep2</strong>. Este informe permite revisar visualmente distintos aspectos de calidad relacionados con las secuencias leídas en el primer extremo de los fragmentos.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R1_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R1_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R1_fastqc.html" download="PX_Cd0_Rep2_R1_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1.1" class="titulo4">
+<p>2.2.1.1. Muestra: PX_Cd0_Rep3</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>forward</strong> <em>(read 1)</em> de la muestra <strong>PX_Cd0_Rep3</strong>. Este informe permite revisar visualmente distintos aspectos de calidad relacionados con las secuencias leídas en el primer extremo de los fragmentos.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R1_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R1_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R1_fastqc.html" download="PX_Cd0_Rep3_R1_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1.1" class="titulo4">
+<p>2.2.1.1. Muestra: WT_Cd0_Rep1</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>forward</strong> <em>(read 1)</em> de la muestra <strong>WT_Cd0_Rep1</strong>. Este informe permite revisar visualmente distintos aspectos de calidad relacionados con las secuencias leídas en el primer extremo de los fragmentos.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R1_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R1_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R1_fastqc.html" download="WT_Cd0_Rep1_R1_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1.1" class="titulo4">
+<p>2.2.1.1. Muestra: WT_Cd0_Rep2</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>forward</strong> <em>(read 1)</em> de la muestra <strong>WT_Cd0_Rep2</strong>. Este informe permite revisar visualmente distintos aspectos de calidad relacionados con las secuencias leídas en el primer extremo de los fragmentos.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R1_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R1_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R1_fastqc.html" download="WT_Cd0_Rep2_R1_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.1.1" class="titulo4">
+<p>2.2.1.1. Muestra: WT_Cd0_Rep3</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>forward</strong> <em>(read 1)</em> de la muestra <strong>WT_Cd0_Rep3</strong>. Este informe permite revisar visualmente distintos aspectos de calidad relacionados con las secuencias leídas en el primer extremo de los fragmentos.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R1_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R1_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una pestaña nueva </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R1_fastqc.html" download="WT_Cd0_Rep3_R1_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 15px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2" class="titulo3">
+<p>2.2.2. Evaluación de calidad de lecturas Backward</p>
+</div>
+<p>
+En esta sección se presentan los resultados del análisis de calidad correspondientes a las lecturas <strong>backward</strong> <em>(read 2)</em> de cada muestra. Estas lecturas representan el segundo extremo de los fragmentos secuenciados en protocolos <em>paired-end</em>, y complementan la información proporcionada por las lecturas <em>forward</em> para una reconstrucción más completa de las transcripciones.
+</p>
+<p>
+A continuación, se muestran las evaluaciones individuales de calidad para las lecturas <em>read 2</em> por muestra, siguiendo el mismo formato estructurado que en el apartado anterior. Revisar cuidadosamente estos informes permite identificar posibles deficiencias específicas en las lecturas <em>backward</em>, como una menor calidad en las regiones finales, errores de secuenciación acumulativos o patrones inusuales en la distribución de bases. Estos aspectos son fundamentales para garantizar que ambas lecturas de cada fragmento contribuyan de forma fiable al análisis global.
+</p>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2.1" class="titulo4">
+<p>2.2.2.1. Muestra: PX_Cd0_Rep1</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>backward</strong> <em>(read 2)</em> de la muestra <strong>PX_Cd0_Rep1</strong>. Este informe permite revisar visualmente diversos aspectos relacionados con la calidad de las secuencias obtenidas en el segundo extremo de los fragmentos, facilitando la detección de posibles incidencias que puedan comprometer el análisis posterior.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R2_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R2_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una nueva página </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep1_R2_fastqc.html" download="PX_Cd0_Rep1_R2_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2.1" class="titulo4">
+<p>2.2.2.1. Muestra: PX_Cd0_Rep2</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>backward</strong> <em>(read 2)</em> de la muestra <strong>PX_Cd0_Rep2</strong>. Este informe permite revisar visualmente diversos aspectos relacionados con la calidad de las secuencias obtenidas en el segundo extremo de los fragmentos, facilitando la detección de posibles incidencias que puedan comprometer el análisis posterior.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R2_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R2_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una nueva página </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep2_R2_fastqc.html" download="PX_Cd0_Rep2_R2_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2.1" class="titulo4">
+<p>2.2.2.1. Muestra: PX_Cd0_Rep3</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>backward</strong> <em>(read 2)</em> de la muestra <strong>PX_Cd0_Rep3</strong>. Este informe permite revisar visualmente diversos aspectos relacionados con la calidad de las secuencias obtenidas en el segundo extremo de los fragmentos, facilitando la detección de posibles incidencias que puedan comprometer el análisis posterior.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R2_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R2_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una nueva página </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/PX_Cd0_Rep3_R2_fastqc.html" download="PX_Cd0_Rep3_R2_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2.1" class="titulo4">
+<p>2.2.2.1. Muestra: WT_Cd0_Rep1</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>backward</strong> <em>(read 2)</em> de la muestra <strong>WT_Cd0_Rep1</strong>. Este informe permite revisar visualmente diversos aspectos relacionados con la calidad de las secuencias obtenidas en el segundo extremo de los fragmentos, facilitando la detección de posibles incidencias que puedan comprometer el análisis posterior.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R2_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R2_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una nueva página </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep1_R2_fastqc.html" download="WT_Cd0_Rep1_R2_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2.1" class="titulo4">
+<p>2.2.2.1. Muestra: WT_Cd0_Rep2</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>backward</strong> <em>(read 2)</em> de la muestra <strong>WT_Cd0_Rep2</strong>. Este informe permite revisar visualmente diversos aspectos relacionados con la calidad de las secuencias obtenidas en el segundo extremo de los fragmentos, facilitando la detección de posibles incidencias que puedan comprometer el análisis posterior.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R2_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R2_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una nueva página </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep2_R2_fastqc.html" download="WT_Cd0_Rep2_R2_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 12px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.2.2.1" class="titulo4">
+<p>2.2.2.1. Muestra: WT_Cd0_Rep3</p>
+</div>
+<p>
+A continuación se muestra el informe de control de calidad correspondiente a la lectura <strong>backward</strong> <em>(read 2)</em> de la muestra <strong>WT_Cd0_Rep3</strong>. Este informe permite revisar visualmente diversos aspectos relacionados con la calidad de las secuencias obtenidas en el segundo extremo de los fragmentos, facilitando la detección de posibles incidencias que puedan comprometer el análisis posterior.
+</p>
+<div class="iframe-container">
+<p><iframe src="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R2_fastqc.html" frameborder="0" style="height: 700px;"></iframe></p>
+</div>
+<div style="display: flex; justify-content: center; gap: 25px;">
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R2_fastqc.html" target="_blank" class="boton-iframe"> <i class="fa-solid fa-file-lines"></i> Abrir informe interactivo de FASTQC en una nueva página </a></p>
+<p><a href="../../../../../../resources/2-nextflow-results/1-project-data/01-EXT-25-Bulk-RNA-Seq/Analisis/mary/Pre_fastqc_results/WT_Cd0_Rep3_R2_fastqc.html" download="WT_Cd0_Rep3_R2_fastqc.html" class="boton-iframe-download"> <i class="fa-solid fa-file-arrow-down"></i> Descargar informe </a></p>
+</div>
+<div style="height: 20px; background-color: transparent;">
+
+</div>
+<div id="tab3-seccion2.3" class="titulo2">
+<p>2.3. Reflexiones finales sobre el control de calidad</p>
+</div>
+<div style="height: 2px; background-color: transparent;">
+
+</div>
+<p>
+<strong>¿Por qué es fundamental realizar un control de calidad en RNA-Seq?</strong><br>
+</p>
+<p>
+En estudios de <strong>RNA-Seq (mRNA, miRNA y circRNA)</strong>, la fiabilidad de los análisis posteriores depende críticamente de la calidad de las lecturas. Detectar tempranamente problemas como baja calidad en posiciones específicas, sesgos nucleotídicos, presencia de adaptadores residuales o secuencias duplicadas es esencial para asegurar resultados precisos en etapas posteriores como el alineamiento, la cuantificación de expresión y el análisis diferencial.
+</p>
+<p>
+Un control de calidad integral permite identificar muestras con posibles problemas antes de pasar al alineamiento, como baja cobertura, sesgos en la distribución de lecturas o adaptadores no eliminados. De esta manera, se pueden definir filtros adecuados para limpiar los datos y garantizar que las lecturas que ingresan al pipeline sean consistentes y fiables.
+</p>
+<div style="height: 5px; background-color: transparent;">
+
+</div>
+<p>
+<strong>Conceptos clave a recordar:</strong>
+</p>
+<ul>
+<li>
+<strong>Lecturas forward (read 1) y reverse (read 2)</strong> <strong>⇒</strong> fragmentos secuenciados desde ambos extremos en la técnica paired-end, que aportan información complementaria para mejorar la resolución de la cuantificación de genes y la detección de errores de secuenciación.
+</li>
+<li>
+<strong>Módulos de FastQC</strong> <strong>⇒</strong> métricas que evalúan calidad por base, contenido de GC, secuencias sobre-representadas, duplicaciones y adaptadores, permitiendo identificar problemas técnicos o biológicos específicos de cada muestra.
+</li>
+<li>
+<strong>MultiQC</strong> <strong>⇒</strong> herramienta que integra los informes individuales de FastQC, proporcionando una visión global que facilita la identificación de anomalías consistentes entre múltiples muestras y lotes de secuenciación.
+</li>
+<li>
+<strong>Importancia para RNA-Seq</strong> <strong>⇒</strong> un control de calidad adecuado garantiza que los resultados de alineamiento, cuantificación y análisis diferencial sean fiables, evitando artefactos que puedan afectar la interpretación biológica.
+</li>
+</ul>
+<p>
+En conjunto, este control de calidad constituye un pilar indispensable en cualquier pipeline de RNA-Seq. La combinación de FastQC y MultiQC maximiza la confianza en los datos, reduce la introducción de artefactos y asegura que los resultados reflejen con precisión la expresión real de los genes y transcritos en las muestras analizadas.
+</p>
+<p>
+Tras haber completado estas inspecciones y validaciones, se está preparado para proceder con la siguiente fase del flujo de trabajo, que consiste en el <a href="3-alineamiento.html#" class="normalink">alineamiento de lecturas al genoma de referencia</a>, donde se mapearán las secuencias al genoma de referencia para cuantificar la expresión génica.
+</p>
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<footer>
+<a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>
+
+
+
+
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<script src="../../../../../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

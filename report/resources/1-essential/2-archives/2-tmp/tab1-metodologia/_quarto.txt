@@ -1,0 +1,90 @@
+project:
+  type: website
+  output-dir: report
+  render:
+    - index.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab1-metodologia/metodologia.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab2-resumen/resumen.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/0-contexto.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/1-revision-inicial.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/2-evaluacion-calidad.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/3-alineamiento.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/4-cuantificacion.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5-analisis-estadistico.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5.1-normalizacion.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5.2-evaluacion-calidad-normalizacion.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5.3-analisis-expresion.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5.4-analisis-funcional.qmd
+    - resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/6-conclusiones.qmd
+
+resources:
+  - resources/**
+  - '!resources/1-essential/3-scripts/1-r/'
+  - '!resources/1-essential/3-scripts/5-python/'
+
+format:
+  html:
+    css: resources/1-essential/3-scripts/3-css/styles.css
+    theme: lux
+    toc: false
+    code-fold: false
+    code-tools: false
+    number-sections: false
+    page-layout: custom
+    smooth-scroll: true
+    highlight-style: a11y-dark
+    self-contained: false
+    copy-files: true
+    html: true
+
+include-in-header:
+  text: |-
+    <link rel="shortcut icon" href="resources/1-essential/1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="resources/1-essential/1-images/icons/favicon.ico">
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: false
+  cache: true
+
+params:
+  project_path: ''
+  experiment_name: ''
+  report_version: ''
+
+website:
+  navbar:
+    title: |-
+      <img class='brand-logo' src='/resources/1-essential/1-images/icons/ipbln.png'>
+      <a class='brand-text' href='https://www.ipb.csic.es/servicios/Bioinformatica/index.html'>IPBLN</a>
+    right:
+      - text: "Inicio"
+        icon: house
+        href: "index.qmd"
+      - text: "Metodología"
+        icon: wrench
+        href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab1-metodologia/metodologia.qmd"
+      - text: "Resumen"
+        icon: clipboard-data
+        href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab2-resumen/resumen.qmd"
+      - text: "Análisis"
+        icon: bar-chart
+        menu:
+          - text: "➤ Introducción contextual"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/0-contexto.qmd"
+          - text: "1. Revisión inicial de muestras y metadatos"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/1-revision-inicial.qmd"
+          - text: "2. Evaluación de calidad de las lecturas"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/2-evaluacion-calidad.qmd"
+          - text: "3. Alineamiento de las lecturas"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/3-alineamiento.qmd"
+          - text: "4. Cuantificación de la expresión génica"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/4-cuantificacion.qmd"
+          - text: "5. Análisis estadístico de la expresión génica"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/5-analisis-estadistico.qmd"
+          - text: "6. Conclusiones y perspectivas"
+            href: "resources/1-essential/3-scripts/2-quarto/1-full-version/tab3-analisis/6-conclusiones.qmd"
+
+clean: false

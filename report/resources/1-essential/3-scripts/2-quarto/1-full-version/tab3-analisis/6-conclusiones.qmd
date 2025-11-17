@@ -1,0 +1,225 @@
+---
+title: "Bulk RNA-Seq Report"
+
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+params:
+  project_path: ""
+  experiment_name: ""
+  report_version: ""
+---
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{=html}
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta..."/>
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+```
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Incluir Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS | 6. CONCLUSIONES Y PERSPECTIVAS -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<div class="informe-titulo-tab">
+  <h1>Pestaña</h1>
+  <h2>Análisis bioinformático completo</h2>
+</div>
+
+<div class="informe-titulo-seccion-unique">
+  <h1>Sección 6</h1>
+  <h2>Conclusiones y perspectivas</h2>
+</div>
+
+
+<div class="informe-resumen">
+  <h2>Resumen</h2>
+
+  <p>
+    Esta sección final sintetiza los principales hallazgos obtenidos a lo largo del análisis de expresión génica diferencial, 
+    destacando la <strong>identificación de genes clave</strong> y su <strong>interpretación funcional</strong> en el contexto biológico estudiado. 
+    Asimismo, se plantean <strong>líneas futuras de investigación</strong> orientadas a validar experimentalmente los resultados, explorar la regulación génica mediante 
+    <em>análisis de redes</em> e integrar estos datos con otros niveles ómicos para lograr una comprensión más completa de los procesos moleculares implicados.
+  </p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo-toc">
+  Tabla de contenidos de esta sección
+</div>
+
+<div class="toc">
+  <ul>
+    <li>
+      <a href="#tab3-seccion6">
+        6<span>.</span> Conclusiones y perspectivas
+      </a>
+    </li>
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- REDACCIÓN -->
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+<div style="height: 25px; background-color: transparent;"></div>
+
+<div class="titulo1" id="tab3-seccion6">
+  6<span>.</span> Conclusiones y perspectivas
+</div>
+
+<p>
+  A lo largo de este informe se ha llevado a cabo un análisis transcriptómico completo, abarcando todas las etapas esenciales del flujo de trabajo típico en estudios de expresión génica mediante RNA-Seq. 
+  Desde la <strong>revisión inicial de las muestras y sus metadatos</strong>, pasando por el <strong>control de calidad de las lecturas crudas</strong>, el <strong>alineamiento de secuencias al genoma de referencia</strong>, y la <strong>cuantificación de la expresión génica</strong>, hasta llegar al <strong>análisis estadístico y funcional de los genes diferencialmente expresados</strong>, cada paso ha sido implementado de forma rigurosa y reproducible.
+</p>
+
+<p>
+  El análisis estadístico permitió identificar <strong>genes cuya expresión se encuentra significativamente alterada</strong> entre las condiciones experimentales, proporcionando pistas sobre los mecanismos moleculares subyacentes a los fenotipos observados. 
+  Mediante procedimientos de <strong>normalización</strong> y <strong>evaluación de la calidad post-alineamiento</strong>, se garantizó la fiabilidad de los datos antes de aplicar metodologías inferenciales robustas para la <strong>detección de genes diferencialmente expresados (DEGs)</strong>.
+</p>
+
+<p>
+  Finalmente, los <strong>análisis funcionales y de enriquecimiento</strong> basados en bases de datos ampliamente validadas (GO y KEGG) permitieron contextualizar biológicamente los resultados, revelando <strong>procesos biológicos, funciones moleculares, componentes celulares y rutas metabólicas</strong> potencialmente implicados en la respuesta diferencial observada. 
+  Esta integración de capas de información aporta profundidad interpretativa al estudio y facilita la priorización de genes y funciones de interés para futuros trabajos experimentales.
+</p>
+
+<p>
+  En conjunto, este informe constituye una herramienta valiosa tanto para la <strong>exploración inicial de datos transcriptómicos</strong> como para la <strong>formulación de nuevas hipótesis biológicas</strong>. 
+  Los resultados obtenidos pueden orientar decisiones en fases posteriores del proyecto, como el diseño de experimentos de validación o la integración con otras fuentes de datos ómicos.
+</p>
+
+<p>
+  Como proyección hacia líneas futuras, se recomienda:
+</p>
+
+<ul>
+  <li>
+    <strong>Validar experimentalmente</strong> los genes de mayor interés utilizando técnicas como RT-qPCR, Western blot o ensayos funcionales in vitro/in vivo.
+  </li>
+  <li>
+    Realizar <strong>análisis de redes de coexpresión</strong> para identificar posibles genes reguladores clave o módulos funcionales coordinados.
+  </li>
+  <li>
+    Explorar <strong>estrategias de integración multi-ómica</strong>, combinando los datos transcriptómicos con información proteómica, epigenómica o metabolómica, para obtener una visión más completa del sistema biológico.
+  </li>
+  <li>
+    Implementar <strong>modelos computacionales avanzados</strong> (aprendizaje automático, análisis bayesiano, modelado de redes) para extraer patrones complejos y predecir fenómenos biológicos a partir de los datos generados.
+  </li>
+</ul>
+
+<p>
+  En definitiva, este análisis representa un paso fundamental hacia la comprensión de los mecanismos moleculares asociados a las condiciones evaluadas, y sienta las bases para una <strong>investigación biomédica o biotecnológica más profunda y dirigida</strong>.
+</p>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<footer>
+  <a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>

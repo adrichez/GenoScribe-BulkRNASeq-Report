@@ -1,0 +1,1144 @@
+---
+title: "Bulk RNA-Seq Report"
+
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+params:
+  project_path: ""
+  experiment_name: ""
+  report_version: ""
+---
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{=html}
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta..."/>
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+```
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Incluir Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS | 4. CUANTIFICACIÓN DE LA EXPRESIÓN GENÉTICA -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{r}
+library(glue)
+library(fs)
+library(stringr)
+library(dplyr)
+library(readr)
+
+# Rutas clave
+ruta_qmd <- getwd()
+ruta_bulk_rna_seq_pipeline <- file.path("..", "..", "..", "..", "..", "..")
+ruta_bulk_rna_seq_pipeline_absoluta <- normalizePath(ruta_bulk_rna_seq_pipeline)
+nombre_proyecto <- basename(params$project_path)
+nombre_experimento <- basename(params$experiment_name)
+
+
+# Rutas de resultados Nextflow
+ruta_nextflow_results <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results")
+ruta_proyecto_relativa <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results", "1-project-data", nombre_proyecto)
+
+
+# Construir ruta usando file.path
+ruta_his_ReadCount <- file.path(params$project_path, "Analisis", nombre_experimento, "Readcount_results", "his-ReadCount.tab")
+ruta_his_ReadCount_relativa <- file.path(ruta_proyecto_relativa, "Analisis", nombre_experimento, "Readcount_results", "his-ReadCount.tab")
+
+
+# Construir ruta usando file.path
+ruta_his_Size <- file.path(params$project_path, "Analisis", nombre_experimento, "Readcount_results", "his-Size.tab")
+ruta_his_Size_relativa <- file.path(ruta_proyecto_relativa, "Analisis", nombre_experimento, "Readcount_results", "his-Size.tab")
+
+
+# Rutas para guardar los archivos creados
+ruta_archives_tmp_analisis <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "1-essential", "2-archives", "2-tmp", "tab3-analisis")
+
+ruta_total_lecturas_muestra_txt <- file.path(ruta_archives_tmp_analisis, "total_lecturas_muestra.txt")
+ruta_genes_expresados_muestra_txt <- file.path(ruta_archives_tmp_analisis, "genes_expresados_muestra.txt")
+ruta_genes_mayor_expresion_total_txt <- file.path(ruta_archives_tmp_analisis, "genes_mayor_expresion_total.txt")
+```
+
+
+<div class="informe-titulo-tab">
+  <h1>Pestaña</h1>
+  <h2>Análisis bioinformático completo</h2>
+</div>
+
+<div class="informe-titulo-seccion-unique">
+  <h1>Sección 4</h1>
+  <h2>Cuantificación de la expresión genética</h2>
+</div>
+
+<div class="flecha-abajo">
+  ▼
+</div>
+
+
+<div class="informe-resumen">
+  <h2>Resumen</h2>
+
+  <p>
+    En esta sección se lleva a cabo la <strong>cuantificación de la expresión génica</strong>, un paso fundamental tras el <em>alineamiento</em> de las lecturas al genoma de referencia. 
+    El objetivo principal es <strong>determinar cuántas lecturas se asignan a cada gen</strong>, generando una <em>matriz de conteos</em> que representa la actividad transcripcional 
+    en cada muestra analizada. Esta información constituye la base sobre la que se desarrollarán los posteriores análisis de <strong>expresión diferencial</strong> y 
+    <strong>enriquecimiento funcional</strong>.
+  </p>
+
+  <p>
+    La cuantificación se ha realizado a partir de los <em>archivos de alineamiento</em> (<code>BAM</code>) generados previamente, utilizando anotaciones genómicas para identificar 
+    las regiones correspondientes a los genes. El resultado ha sido una matriz de expresión no normalizada, almacenada en el archivo <code><strong>his-ReadCount.tab</strong></code>, 
+    en la que cada fila representa un gen y cada columna una muestra del experimento.
+  </p>
+
+  <p>
+    Paralelamente, se ha generado el archivo <code><strong>his-Size.tab</strong></code>, que recoge la <strong>longitud de cada gen</strong> en pares de bases (bp). 
+    Esta información es crucial para realizar posteriormente una <strong>normalización adecuada</strong> de los datos, ya que permite corregir el sesgo introducido 
+    por la longitud variable de los genes.
+  </p>
+
+  <p>
+    Para evaluar la calidad y estructura del conjunto de datos, se incluyen diversas <strong>visualizaciones exploratorias</strong> de los conteos brutos. 
+    Entre ellas se encuentran la <em>visualización interactiva de la matriz de conteos</em>, el <strong>análisis de la longitud génica</strong>, 
+    y un conjunto de gráficos y métricas que permiten valorar la <em>distribución</em>, <em>consistencia</em> y <em>homogeneidad</em> entre las muestras.
+  </p>
+
+  <p>
+    Se examinan también indicadores clave como el <strong>total de lecturas asignadas</strong> por muestra, el <strong>número de genes expresados</strong>, 
+    los <em>genes más abundantemente transcritos</em>, y la <strong>distribución de los niveles de expresión</strong> mediante <em>boxplots logarítmicos</em>. 
+    Este análisis preliminar permite detectar <strong>desviaciones inusuales</strong> o muestras atípicas antes de avanzar hacia la normalización y los análisis estadísticos.
+  </p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo-toc">
+  Tabla de contenidos de esta sección
+</div>
+
+<div class="toc">
+  <ul>
+    <li>
+      <a href="#tab3-seccion4">
+        4<span>.</span> Cuantificación de la expresión genética
+      </a>
+      <ul>
+        <li>
+          <a href="#tab3-seccion4.1">
+            4.1. Visualización de la matriz de recuentos crudos
+          </a>
+        </li>
+        <li>
+          <a href="#tab3-seccion4.2">
+            4.2. Visualización de la longitud génica
+          </a>
+        </li>
+        <li>
+          <a href="#tab3-seccion4.3">
+            4.3. Exploración preliminar de los recuentos crudos
+          </a>
+          <ul>
+            <li>
+              <a href="#tab3-seccion4.3.1">
+                4.3.1. Total de lecturas asignadas por muestra
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion4.3.2">
+                4.3.2. Número de genes expresados por muestra
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion4.3.3">
+                4.3.3. Genes con mayor nivel de expresión total
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion4.3.4">
+                4.3.4. Distribución de recuentos por muestra (boxplot log10)
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- REDACCIÓN -->
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+<div style="height: 25px; background-color: transparent;"></div>
+
+<div class="titulo1" id="tab3-seccion4">
+  4<span>.</span> Cuantificación de la expresión genética
+</div>
+
+<p>
+  Tras el alineamiento de las lecturas al genoma de referencia, el siguiente paso fundamental en un análisis de RNA-Seq consiste en
+  cuantificar la expresión génica. Este proceso permite determinar cuántas lecturas están asociadas a cada gen, proporcionando una estimación
+  del nivel de actividad transcripcional en cada muestra.
+</p>
+
+<p>
+  En este proyecto, la cuantificación se ha realizado mediante el recuento de lecturas alineadas a regiones génicas anotadas, generando
+  una matriz de expresión en bruto (no normalizada). Este recuento se ha obtenido a partir de los archivos <code>SAM</code>/<code>BAM</code> generados durante el alineamiento.
+</p>
+
+<p>
+  Para ello, se han producido dos archivos fundamentales:
+</p>
+
+<ul>
+  <li>
+    <strong><code>his-ReadCount.tab</code></strong> <strong>&rArr;</strong> contiene la matriz de conteos crudos, en la que las filas representan genes y las columnas
+    corresponden a las distintas muestras del experimento. Los valores indican el número de lecturas que se alinean a cada gen en cada muestra.
+  </li>
+  <li>
+    <strong><code>his-Size.tab</code></strong> <strong>&rArr;</strong> almacena la longitud (en pares de bases) de cada gen. Esta información es esencial para normalizar
+    los conteos de expresión y poder comparar niveles de expresión entre genes de distinta longitud o entre muestras con diferente profundidad de secuenciación.
+  </li>
+</ul>
+
+<p>
+  La combinación de estos dos archivos permite generar métricas de expresión normalizadas como <code>RPKM</code> o <code>TPM</code>, que serán analizadas en una sección posterior.
+</p>
+
+
+
+
+
+
+
+
+
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion4.1">
+  4.1. Visualización de la matriz de recuentos crudos
+</div>
+
+<p>
+  A continuación, se presenta una vista interactiva de la matriz de expresión génica no normalizada, extraída del archivo <code>his-ReadCount.tab</code>. 
+  Esta matriz refleja el número de lecturas alineadas a cada gen en cada una de las muestras analizadas, y constituye el punto de partida para los análisis posteriores 
+  de normalización y detección de genes diferencialmente expresados.
+</p>
+
+<p>
+  En la tabla mostrada a continuación, se puede <strong>buscar directamente por el identificador del gen</strong> mediante la barra de búsqueda integrada. 
+  Además, al <strong>hacer clic sobre los encabezados de las columnas</strong>, se permite ordenar los valores de forma ascendente o descendente, lo que facilita 
+  la exploración detallada de los niveles de expresión por muestra.
+</p>
+
+```{r}
+library(DT)
+
+# Leer el archivo y mostrar tabla interactiva
+his_ReadCount <- read.delim(ruta_his_ReadCount, row.names = 1)
+
+# Mostrar tabla interactiva con DT
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    his_ReadCount,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_his_ReadCount_relativa}" 
+    download="{basename(ruta_his_ReadCount_relativa)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_his_ReadCount_relativa)}"
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Si desea visualizar el archivo completo directamente, puede hacerlo desde el siguiente visor incrustado o abrirlo en una nueva pestaña:
+</p>
+
+```{r, results='asis'}
+cat(glue::glue('
+<div class="iframe-container">
+  <iframe src="{ruta_his_ReadCount_relativa}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_his_ReadCount_relativa}"
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion4.2">
+  4.2. Visualización de la longitud génica
+</div>
+
+<p>
+  Además de los conteos de expresión, es necesario considerar la longitud de cada gen para poder aplicar métodos de normalización adecuados, como <code>RPKM</code> o <code>TPM</code>. 
+  La longitud génica permite corregir el sesgo introducido por el hecho de que genes más largos tienden a acumular más lecturas simplemente por su tamaño, 
+  independientemente de su nivel real de expresión.
+</p>
+
+<p>
+  La información de longitud de los genes se encuentra contenida en el archivo <code>his-Size.tab</code>, el cual proporciona la medida en pares de bases (bp) 
+  de cada transcrito o gen incluido en el análisis. Este archivo se ha generado utilizando las anotaciones genómicas correspondientes al genoma de referencia empleado 
+  en la fase de alineamiento.
+</p>
+
+<p>
+  A continuación, se presenta una tabla interactiva con los datos de longitud génica. Esta tabla permite <strong>ordenar las longitudes de forma ascendente o descendente</strong> 
+  haciendo clic sobre el encabezado de la columna, y <strong>buscar genes específicos por su identificador</strong> utilizando la barra de búsqueda disponible. 
+  Esta visualización facilita la inspección de posibles sesgos en la distribución de longitudes que pudieran influir en los análisis posteriores.
+</p>
+
+```{r}
+# Leer el archivo y mostrar tabla interactiva
+his_Size <- read.delim(ruta_his_Size, row.names = 1)
+
+# Mostrar tabla interactiva con DT
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    his_Size,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_his_Size_relativa}" 
+    download="{basename(ruta_his_Size_relativa)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_his_Size_relativa)}"
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Si desea visualizar el archivo completo directamente, puede hacerlo desde el siguiente visor incrustado o abrirlo en una nueva pestaña:
+</p>
+
+```{r, echo=FALSE, results='asis'}
+cat(glue::glue('
+<div class="iframe-container">
+  <iframe src="{ruta_his_Size_relativa}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_his_Size_relativa}"
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion4.3">
+  4.3. Exploración preliminar de los recuentos crudos
+</div>
+
+<p>
+  Antes de aplicar técnicas de normalización y análisis estadístico, es fundamental realizar una inspección preliminar de los recuentos de expresión obtenidos.
+  Esta exploración tiene como objetivo identificar posibles anomalías, evaluar la distribución global de los datos y comprobar la consistencia entre las muestras.
+</p>
+
+<p>
+  A partir del archivo <code>his-ReadCount.tab</code>, que contiene la matriz de expresión no normalizada, se llevan a cabo diversos análisis exploratorios que permiten:
+</p>
+
+<ul>
+  <li>Calcular el número total de lecturas asignadas a cada muestra.</li>
+  <li>Determinar el número de genes expresados por muestra.</li>
+  <li>Identificar los genes con mayor nivel de expresión.</li>
+  <li>Visualizar la distribución general de los recuentos por gen y por muestra.</li>
+</ul>
+
+<p>
+  Estas métricas y visualizaciones proporcionan una primera impresión sobre la calidad del conjunto de datos y permiten anticipar posibles fuentes de variabilidad que puedan influir en los resultados del análisis de expresión diferencial.
+</p>
+
+
+
+
+
+
+
+
+<div style="height: 10px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion4.3.1">
+  4.3.1. Total de lecturas asignadas por muestra
+</div>
+
+<p>
+  Para comenzar la exploración de los recuentos, se calcula el número total de lecturas asignadas a cada muestra. 
+  Este valor corresponde a la suma de todos los recuentos por muestra y proporciona una primera aproximación sobre la profundidad de secuenciación obtenida en el experimento.
+</p>
+
+<p>
+  A continuación, se muestra dicha tabla resultante, con los totales de lectura por muestra y la cuál se puede explorar de forma interactiva.
+</p>
+
+```{r}
+library(DT)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(stringr)
+library(scales)
+library(tidyverse)
+library(tidyr)
+library(tibble)
+
+# Calcular número total de lecturas asignadas por muestra
+total_recuentos_por_muestra <- colSums(his_ReadCount)
+total_recuentos_por_muestra_df <- data.frame(
+  Muestra = names(total_recuentos_por_muestra),
+  TotalRecuentos = as.integer(total_recuentos_por_muestra)
+)
+
+# Convertir a data frame para ggplot2
+df_total <- data.frame(
+  muestra = names(total_recuentos_por_muestra),
+  total_lecturas = as.integer(total_recuentos_por_muestra)
+)
+
+# Asegurarnos que 'targets' está cargado previamente
+targets_experimento <- paste0("targets_", nombre_experimento, ".txt")
+ruta_targets_experimento <- file.path(params$project_path, "Resultados", targets_experimento)
+ruta_targets_experimento_relativa <- file.path(ruta_proyecto_relativa, "Resultados", targets_experimento)
+targets <- read.table(ruta_targets_experimento, header = TRUE, fill = TRUE, stringsAsFactors = FALSE)
+
+# Limpiar y unir condición
+df_total$muestra <- str_remove(df_total$muestra, "_nat$")
+df_total <- df_total %>%
+  left_join(targets %>% select(Filename, Type), by = c("muestra" = "Filename")) %>%
+  rename(condicion = Type) %>%
+  select(muestra, condicion, total_lecturas) %>%
+  arrange(desc(total_lecturas))
+
+# Guardar dataframe generado en formato .txt
+write_delim(df_total, ruta_total_lecturas_muestra_txt, delim = "\t")
+
+# Mostrar tabla interactiva con DT
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    df_total,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_total_lecturas_muestra_txt}" 
+    download="{basename(ruta_total_lecturas_muestra_txt)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_total_lecturas_muestra_txt)}"
+  </a>
+</p>
+
+<p>
+  Estos resultados que acabamos de visualizar han sido guardados en un archivo denominado <code>{basename(ruta_total_lecturas_muestra_txt)}</code>, el cuál se puede descargar a través del botón proporcionado anteriormente. Adicionalmente, podemos visualizar este archivo mediante el siguiente <code>iframe</code> o explorarlo de forma más detallada en una nueva pestaña.
+</p>
+
+<div class="iframe-container">
+  <iframe src="{ruta_total_lecturas_muestra_txt}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_total_lecturas_muestra_txt}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Finalmente, se proporciona el siguiente gráfico de barras interactivo, que permite comparar la profundidad de secuenciación entre condiciones y réplicas y con el cuál se puede observar estos resultados de una forma más dinámica y visual.
+</p>
+
+<div class="plot-center">
+
+```{r}
+# Gráfico de número total de lecturas por muestra con plotly
+p <- plot_ly(
+  data = df_total,
+  x = ~muestra,
+  y = ~total_lecturas,
+  type = "bar",
+  color = ~condicion,
+  colors = "Set2",
+  text = ~comma(total_lecturas),
+  textposition = "outside",
+  hoverinfo = "text",
+  hovertext = ~paste0("Muestra: ", muestra, "<br>Lecturas: ", comma(total_lecturas))
+) %>%
+  layout(
+    title = "Total de lecturas por muestra",
+    xaxis = list(title = "Muestra", tickangle = -45, tickfont = list(size = 10)),
+    yaxis = list(
+      title = "Número de lecturas",
+      range = c(0, max(df_total$total_lecturas) * 1.15)
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      y = -0.5,
+      xanchor = "center"
+    ),
+    margin = list(t = 100, b = 170),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_total_lecturas_muestra_html <- file.path(ruta_archives_tmp_analisis, "graph_total_lecturas_muestra.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_total_lecturas_muestra_html,
+  selfcontained = TRUE,
+  title = "Total de lecturas por muestra"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_total_lecturas_muestra_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 10px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion4.3.2">
+  4.3.2. Número de genes expresados por muestra
+</div>
+
+<p>
+  Tras analizar la profundidad de secuenciación, el siguiente paso consiste en evaluar cuántos genes se detectaron como expresados en cada muestra.
+  Para ello, se considera un gen como expresado si presenta un recuento mayor que cero en una muestra determinada. Este análisis permite identificar posibles muestras con baja calidad o problemas técnicos, ya que un número atípicamente bajo de genes expresados podría indicar una eficiencia deficiente en la captura o amplificación del RNA.
+</p>
+
+<p>
+  A continuación, se muestra dicha tabla resultante, con el número de genes expresados por muestra y la cuál se puede explorar de forma interactiva.
+</p>
+
+```{r}
+# Calcular número de genes expresados por muestra (genes con recuentos > 0)
+genes_expresados_por_muestra <- colSums(his_ReadCount > 0)
+genes_expresados_por_muestra_df <- data.frame(
+  Muestra = names(genes_expresados_por_muestra),
+  GenesExpresados = as.integer(genes_expresados_por_muestra)
+)
+
+# Crear data frame
+df_genes_exp <- data.frame(
+  muestra = names(genes_expresados_por_muestra),
+  genes_expresados = as.integer(genes_expresados_por_muestra)
+)
+
+# Añadir la columna 'condicion' uniendo por el nombre de muestra
+df_genes_exp$muestra <- str_remove(df_genes_exp$muestra, "_nat$")
+df_genes_exp <- df_genes_exp %>%
+  left_join(targets %>% select(Filename, Type), by = c("muestra" = "Filename")) %>%
+  rename(condicion = Type) %>%
+  select(muestra, condicion, genes_expresados) %>%
+  arrange(desc(genes_expresados))
+
+# Guardar dataframe generado en formato .txt
+write_delim(df_genes_exp, ruta_genes_expresados_muestra_txt, delim = "\t")
+
+# Mostrar tabla interactiva con DT
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    df_genes_exp,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_genes_expresados_muestra_txt}" 
+    download="{basename(ruta_genes_expresados_muestra_txt)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_genes_expresados_muestra_txt)}"
+  </a>
+</p>
+
+<p>
+  Estos resultados que acabamos de visualizar han sido guardados en un archivo denominado <code>{basename(ruta_genes_expresados_muestra_txt)}</code>, el cuál se puede descargar a través del botón proporcionado anteriormente. Adicionalmente, podemos visualizar este archivo mediante el siguiente <code>iframe</code> o explorarlo de forma más detallada en una nueva pestaña.
+</p>
+
+<div class="iframe-container">
+  <iframe src="{ruta_genes_expresados_muestra_txt}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_genes_expresados_muestra_txt}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Finalmente, se proporciona el siguiente gráfico de barras interactivo, que facilita la comparación entre condiciones experimentales y con el cuál se puede observar estos resultados de una forma más dinámica y visual.
+</p>
+
+<div class="plot-center">
+
+```{r}
+# Gráfico: genes expresados por muestra (>0) con plotly
+p <- plot_ly(
+  data = df_genes_exp,
+  x = ~muestra,
+  y = ~genes_expresados,
+  type = "bar",
+  color = ~condicion,
+  colors = "Set2",  # mismo estilo que ggplot (Set1)
+  text = ~comma(genes_expresados),
+  textposition = "outside",
+  hoverinfo = "text",
+  hovertext = ~paste0("Muestra: ", muestra, "<br>Genes expresados: ", comma(genes_expresados))
+) %>%
+  layout(
+    title = "Número de genes expresados por muestra",
+    xaxis = list(
+      title = "Muestra",
+      tickangle = -45,
+      tickfont = list(size = 10)
+    ),
+    yaxis = list(
+      title = "Genes con recuentos > 0",
+      range = c(0, max(df_genes_exp$genes_expresados) * 1.15),
+      separatethousands = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      y = -0.52,
+      xanchor = "center"
+    ),
+    margin = list(t = 100, b = 170),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_genes_expresados_muestra_html <- file.path(ruta_archives_tmp_analisis, "graph_genes_expresados_muestra.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_genes_expresados_muestra_html,
+  selfcontained = TRUE,
+  title = "Número de genes expresados por muestra"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_genes_expresados_muestra_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 10px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion4.3.3">
+  4.3.3. Genes con mayor nivel de expresión total
+</div>
+
+<p>
+  Para identificar los genes con mayor actividad transcripcional dentro del conjunto de datos, se calcula la suma total de recuentos por gen a lo largo de todas las muestras.
+  Esta métrica permite detectar aquellos genes que presentan los niveles de expresión más altos de forma global, y que podrían desempeñar un papel relevante en el contexto biológico del experimento.
+</p>
+
+<p>
+  A continuación, se muestra dicha tabla resultante, con los genes ordenados según su mayor expresión acumulada, de forma descendente según su número total de lecturas.
+</p>
+
+```{r}
+# Obtener los genes con mayor nivel de expresión total (suma por fila)
+top_genes<- rowSums(his_ReadCount) |>
+  sort(decreasing = TRUE)
+
+top_genes_df <- data.frame(
+  Gen = names(top_genes),
+  TotalRecuentos = as.integer(top_genes)
+)
+
+top_genes_20 <- rowSums(his_ReadCount) |>
+  sort(decreasing = TRUE) |>
+  head(20)
+
+top_genes_20_df <- data.frame(
+  Gen = names(top_genes_20),
+  TotalRecuentos = as.integer(top_genes_20)
+)
+
+# Guardar dataframe generado en formato .txt
+write_delim(top_genes_df, ruta_genes_mayor_expresion_total_txt, delim = "\t")
+
+# Crear la tabla interactiva
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    top_genes_df,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_genes_mayor_expresion_total_txt}" 
+    download="{basename(ruta_genes_mayor_expresion_total_txt)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_genes_mayor_expresion_total_txt)}"
+  </a>
+</p>
+
+<p>
+  Estos resultados que acabamos de visualizar han sido guardados en un archivo denominado <code>{basename(ruta_genes_mayor_expresion_total_txt)}</code>, el cuál se puede descargar a través del botón proporcionado anteriormente. Adicionalmente, podemos visualizar este archivo mediante el siguiente <code>iframe</code> o explorarlo de forma más detallada en una nueva pestaña.
+</p>
+
+<div class="iframe-container">
+  <iframe src="{ruta_genes_mayor_expresion_total_txt}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_genes_mayor_expresion_total_txt}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Finalmente, se proporciona el siguiente gráfico de barras interactivo, donde se pueden observar los 20 genes con mayor expresión, permitiendo valorar su contribución relativa dentro del conjunto de datos.
+</p>
+
+<div class="plot-center">
+
+```{r}
+# Ordenar los genes de forma descendente para el gráfico
+top_genes_20_df$Gen <- factor(top_genes_20_df$Gen, levels = rev(top_genes_20_df$Gen))
+
+# Gráfico: top 20 genes más expresados con plotly (horizontal)
+p <- plot_ly(
+  data = top_genes_20_df,
+  x = ~TotalRecuentos,
+  y = ~Gen,
+  type = "bar",
+  orientation = "h",
+  marker = list(
+    color = "#098",
+    line = list(color = "black", width = 1)
+  ),
+  text = ~comma(TotalRecuentos),
+  textposition = "outside",
+  hoverinfo = "text",
+  hovertext = ~paste0("Gen: ", Gen, "<br>Recuentos: ", comma(TotalRecuentos))
+) %>%
+  layout(
+    title = "Top 20 genes más expresados",
+    xaxis = list(
+      title = "Recuentos totales",
+      range = c(0, max(top_genes_20_df$TotalRecuentos) * 1.2),
+      separatethousands = TRUE
+    ),
+    yaxis = list(
+      title = "Gen",
+      automargin = TRUE,
+      tickfont = list(size = 10)
+    ),
+    margin = list(l = 100, t = 80, r = 40),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_genes_mayor_expresion_total_html <- file.path(ruta_archives_tmp_analisis, "graph_genes_mayor_expresion_total.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_genes_mayor_expresion_total_html,
+  selfcontained = TRUE,
+  title = "Top 20 genes más expresados"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_genes_mayor_expresion_total_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 10px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion4.3.4">
+  4.3.4. Distribución de recuentos por muestra (boxplot log10)
+</div>
+
+<p>
+  Por último, para evaluar la variabilidad y la distribución de los recuentos de expresión a nivel genómico en cada muestra, se genera un gráfico de cajas (boxplot) usando una transformación logarítmica (log10).
+  Esta representación permite identificar posibles valores atípicos, diferencias en la dispersión de los datos y comprobar la homogeneidad entre réplicas y condiciones experimentales.
+</p>
+
+<p>
+  Se excluyen los valores cero para evitar problemas con la transformación logarítmica, y se utiliza una visualización interactiva que facilita la exploración detallada de la distribución en cada muestra.
+</p>
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+```{r}
+# Convertir a formato largo
+his_ReadCount_long <- his_ReadCount |>
+  rownames_to_column("gene") |>
+  pivot_longer(-gene, names_to = "muestra", values_to = "recuento")
+
+# Filtrar recuentos mayores que cero antes de graficar
+his_ReadCount_long_filtrado <- his_ReadCount_long |>
+  filter(recuento > 0)
+
+# Hacer el left join con targets para añadir la columna 'Type' como 'condicion'
+his_ReadCount_long_filtrado <- his_ReadCount_long_filtrado %>%
+  mutate(muestra_clean = str_remove(muestra, "_nat$")) %>%
+  select(-muestra) %>%
+  rename(muestra = muestra_clean) %>%
+  left_join(targets %>% select(Filename, Type), by = c("muestra" = "Filename")) %>%
+  rename(condicion = Type)
+```
+
+<div class="plot-center">
+
+```{r}
+# Gráfico: distribución logarítmica de recuentos por muestra (boxplot)
+p <- plot_ly(
+  data = his_ReadCount_long_filtrado,
+  x = ~muestra,
+  y = ~recuento,
+  color = ~condicion,
+  colors = "Set2",
+  type = "box",
+  boxpoints = "outliers",
+  marker = list(size = 3, opacity = 0.5, line = list(width = 0)),
+  line = list(color = "black"),
+  opacity = 0.8
+) %>%
+  layout(
+    title = list(
+      text = "Distribución logarítmica de recuentos por muestra<br><sub>Cada boxplot representa los niveles de expresión génica (log10) por muestra</sub>",
+      y = 0.95
+    ),
+    xaxis = list(
+      title = "Muestra",
+      tickangle = -45,
+      tickfont = list(size = 10)
+    ),
+    yaxis = list(
+      title = "Recuento (log10)",
+      type = "log",
+      separatethousands = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      y = -0.52,
+      xanchor = "center"
+    ),
+    margin = list(t = 100, b = 170),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_distribucion_expresion_muestra_html <- file.path(ruta_archives_tmp_analisis, "graph_distribucion_expresion_muestra.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_distribucion_expresion_muestra_html,
+  selfcontained = TRUE,
+  title = "Distribución de expresión por muestra"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_distribucion_expresion_muestra_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+<div class="divider"></div>
+
+<p>
+  Tras esta <strong>exploración preliminar de los recuentos de expresión génica</strong>, en la que se han examinado aspectos clave como el total de lecturas asignadas, la distribución de los genes expresados y la expresión global por muestra, el siguiente paso será aplicar un <em>proceso de normalización</em> que permita comparar las muestras de forma justa y reducir los posibles sesgos técnicos. A continuación, se llevará a cabo un <a href="5-analisis-estadistico.html#" class="normalink">análisis estadístico de la expresión génica</a>, que incluirá la <strong>evaluación de la calidad post-normalización</strong>, la identificación de <strong>genes diferencialmente expresados</strong> y la realización de un <strong>análisis funcional y de enriquecimiento</strong> para interpretar los resultados en el contexto biológico correspondiente.
+</p>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<footer>
+  <a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>

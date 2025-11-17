@@ -1,0 +1,3 @@
+project_path: "/workspace/data/01-EXT-25-Bulk-RNA-Seq"
+experiment_name: mary
+report_version: 1

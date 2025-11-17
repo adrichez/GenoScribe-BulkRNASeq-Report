@@ -1,0 +1,6 @@
+muestra	condicion	genes_expresados
+PX_Cd0_Rep2	pex11a-C	27690
+PX_Cd0_Rep3	pex11a-C	27666
+PX_Cd0_Rep1	pex11a-C	27562
+WT_Cd0_Rep3	px-ck-C	27472
+WT_Cd0_Rep1	px-ck-C	27445

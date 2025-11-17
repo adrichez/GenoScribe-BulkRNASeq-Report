@@ -1,0 +1,510 @@
+---
+title: "Bulk RNA-Seq Report"
+
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+params:
+  project_path: ""
+  experiment_name: ""
+  report_version: ""
+---
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{=html}
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta..."/>
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+```
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Incluir Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS | 3. ALINEAMIENTO DE LAS LECTURAS AL GENOMA DE REFERENCIA -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{r}
+library(glue)
+library(fs)
+library(stringr)
+library(dplyr)
+
+# Rutas clave
+ruta_qmd <- getwd()
+ruta_bulk_rna_seq_pipeline <- file.path("..", "..", "..", "..", "..", "..")
+ruta_bulk_rna_seq_pipeline_absoluta <- normalizePath(ruta_bulk_rna_seq_pipeline)
+nombre_proyecto <- basename(params$project_path)
+nombre_experimento <- basename(params$experiment_name)
+
+
+# Rutas de resultados Nextflow
+ruta_nextflow_results <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results")
+ruta_proyecto_relativa <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results", "1-project-data", nombre_proyecto)
+
+ruta_hisat2_index <- file.path(params$project_path, "Analisis", nombre_experimento, "hisat2_index")
+ruta_hisat2_index_relativa <- file.path(ruta_proyecto_relativa, "Analisis", nombre_experimento, "hisat2_index")
+
+ruta_hisat2_results <- file.path(params$project_path, "Analisis", nombre_experimento, "hisat2_results")
+ruta_hisat2_results_relativa <- file.path(ruta_proyecto_relativa, "Analisis", nombre_experimento, "hisat2_results")
+```
+
+
+<div class="informe-titulo-tab">
+  <h1>Pestaña 2</h1>
+  <h2>Análisis bioinformático completo</h2>
+</div>
+
+<div class="informe-titulo-seccion-unique">
+  <h1>Sección 3</h1>
+  <h2>Alineamiento de las lecturas contra el genoma de referencia</h2>
+</div>
+
+<div class="flecha-abajo">
+  ▼
+</div>
+
+
+<div class="informe-resumen">
+  <h2>Resumen</h2>
+
+  <p>
+    Esta sección describe el proceso de <strong>alineamiento de las secuencias de ARN ya preprocesadas al genoma de referencia</strong>, un paso crucial para poder cuantificar la expresión génica de forma precisa y contextualizada. El objetivo principal es determinar la ubicación exacta de cada lectura en el genoma, permitiendo así inferir qué genes están activos en cada muestra.
+  </p>
+
+  <p>
+    En primer lugar, se generó el <strong>índice del genoma de referencia</strong> utilizando la herramienta <code>hisat2-build</code>. Este índice es esencial para optimizar el rendimiento del alineamiento, ya que permite a la herramienta <code>HISAT2</code> buscar de forma eficiente coincidencias entre las lecturas y el genoma.
+  </p>
+
+  <p>
+    A continuación, se realizó el <strong>alineamiento de las lecturas</strong> limpias contra el genoma indexado mediante <code>HISAT2</code>, obteniéndose como resultado principal archivos <code>.bam</code> por muestra, los cuales contienen las lecturas mapeadas y ordenadas. Junto a ellos, se generaron los correspondientes archivos de índice <code>.bai</code> para facilitar su visualización y manipulación, así como archivos <code>.metrics</code> que resumen las estadísticas de alineamiento.
+  </p>
+
+  <p>
+    Además, se conservaron los archivos <code>.fastq.gz</code> que contienen aquellas lecturas que no pudieron ser alineadas al genoma, lo que puede resultar útil para estudios posteriores como la búsqueda de elementos novedosos o el análisis de contaminantes.
+  </p>
+
+  <p>
+    Este conjunto de resultados sienta las bases para la siguiente etapa del análisis: la <strong>cuantificación de la expresión génica</strong> a partir de los alineamientos obtenidos.
+  </p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo-toc">
+  Tabla de contenidos de esta sección
+</div>
+
+<div class="toc">
+  <ul>
+    <li>
+      <a href="#tab3-seccion3">
+        3<span>.</span> Alineamiento de las lecturas contra el genoma de referencia
+      </a>
+      <ul>
+        <li>
+          <a href="#tab3-seccion3.1">
+            3.1. Preparación del índice del genoma de referencia
+          </a>
+        </li>
+        <li>
+          <a href="#tab3-seccion3.2">
+            3.2. Alineamiento de lecturas contra el genoma indexado
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- REDACCIÓN -->
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+<div style="height: 25px; background-color: transparent;"></div>
+
+<div class="titulo1" id="tab3-seccion3">
+  3<span>.</span> Alineamiento de las lecturas contra el genoma de referencia
+</div>
+
+<p>
+  Tras verificar la calidad de las lecturas mediante los análisis anteriores, el siguiente paso esencial en el flujo de trabajo de RNA-Seq es el alineamiento de dichas lecturas contra un genoma de referencia. Este proceso permite asignar cada secuencia a una posición específica del genoma, lo cual es imprescindible para interpretar correctamente la expresión génica y obtener resultados biológicamente significativos.
+</p>
+
+<p>
+  El alineamiento es una etapa crítica, ya que errores o ambigüedades en este paso pueden repercutir directamente en la cuantificación posterior y en la detección de genes diferencialmente expresados. Para llevarlo a cabo, se ha empleado el alineador <strong>HISAT2</strong>, una herramienta ampliamente utilizada en estudios transcriptómicos por su alta precisión, eficiencia computacional y capacidad para gestionar grandes volúmenes de datos.
+</p>
+
+<p>
+  <strong>HISAT2</strong> está especialmente diseñado para datos de RNA-Seq y permite detectar empalmes (splicing) de manera efectiva, identificando lecturas que abarcan regiones exónicas separadas por intrones. Esta característica resulta fundamental para capturar la complejidad de la transcriptómica en organismos eucariotas.
+</p>
+
+<p>
+  En las siguientes subsecciones se detallan los pasos previos requeridos para el alineamiento, incluyendo la construcción del índice del genoma de referencia y la ejecución del proceso de mapeo con HISAT2.
+</p>
+
+
+
+
+
+
+
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion3.1">
+  3.1. Preparación del índice del genoma de referencia
+</div>
+
+<p>
+  Para llevar a cabo el alineamiento de las lecturas, es fundamental contar con un índice del genoma de referencia previamente construido. 
+  Este índice consiste en una estructura de datos optimizada que facilita la búsqueda rápida y eficiente de coincidencias entre las lecturas y el genoma, 
+  permitiendo a <strong>HISAT2</strong> realizar alineamientos precisos incluso en regiones complejas del transcriptoma.
+</p>
+
+<p>
+  En el caso de <strong>HISAT2</strong>, el índice está compuesto por múltiples archivos con extensión <code>.ht2</code>, que contienen fragmentos de esta estructura de datos. 
+  Cada uno de estos archivos representa una parte del índice que juntos permiten la navegación eficiente del genoma durante el proceso de alineamiento.
+</p>
+
+<p>
+  En este proyecto, el índice fue generado a partir de la secuencia genómica de referencia seleccionada, y su construcción representa un paso clave para garantizar un procesamiento ágil, reproducible y eficiente.
+</p>
+
+<p>
+  El índice generado, en el momento de la generación de este informe, se encuentra ubicado en la siguiente ruta dentro de la estructura del proyecto:
+</p>
+
+```{r, echo=FALSE, results="asis"}
+cat(glue::glue('
+<code>{ruta_hisat2_index}</code>
+'), sep = "\n")
+```
+
+<p>
+  A continuación, se muestran los archivos que conforman este índice, indispensables para que <strong>HISAT2</strong> pueda realizar el alineamiento de manera efectiva:
+</p>
+
+<div class="box-files">
+
+```{r, echo=FALSE, results="asis"}
+if (!dir.exists(ruta_hisat2_index)) {
+  cat(glue::glue('
+    <div class="alert-warning alert-box">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <b>Advertencia</b><br>
+      La ruta especificada no existe o no es accesible:<br>
+      <code>{ruta_reads_down_select_experimento}</code>.<br>
+      Asegúrese de proporcionar dicha ruta correctamente en el directorio del proyecto.
+    </div>
+  '), sep = "\n")
+
+} else {
+  # Listar solo archivos con extensión .ht2
+  files <- list.files(ruta_hisat2_index, pattern = "\\.ht2$", full.names = FALSE)
+  
+  if (length(files) == 0) {
+    cat(glue::glue('
+      <div class="alert-warning alert-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <b>Advertencia</b><br>
+        No se encontraron archivos con extensión <code>.ht2</code> en la ruta especificada:<br>
+        <code>{ruta_reads_down_select_experimento}</code>.<br>
+        Asegúrese de proporcionar dicha ruta correctamente y con los archivos necesarios.
+      </div>
+    '), sep = "\n")
+
+  } else {
+    enlace <- ruta_hisat2_index
+    
+    cat("<ul>\n")
+    for (f in files) {
+      # Asignar clase según la extensión
+      clase <- if (grepl("\\.html$", f)) {
+        "file-html"
+      } else if (grepl("\\.zip$", f)) {
+        "file-zip"
+      } else if (grepl("\\.fastq(\\..+)?\\.gz$", f)) {
+        "file-fastqgz"
+      } else if (grepl("\\.bam$", f)) {
+        "file-bam"
+      } else if (grepl("\\.bai$", f)) {
+        "file-bai"
+      } else if (grepl("\\.sam$", f)) {
+        "file-sam"
+      } else if (grepl("\\.metrics$", f)) {
+        "file-metrics"
+      } else if (grepl("\\.ht2$", f)) {
+        "file-ht2"
+      } else {
+        "file-default"
+      }
+
+      cat(sprintf('<li class="%s"><a href="%s/%s" target="_blank">%s</a></li>\n', clase, enlace, f, f))
+    }
+    cat("</ul>\n")
+  }
+}
+```
+
+</div>
+
+```{r, echo=FALSE, results="asis"}
+# Para que funcione con rutas absolutas
+enlace <- ruta_hisat2_index_relativa
+
+# Imprimir el enlace
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{enlace}" target="_blank" class="boton-files">
+    <i class="fa-solid fa-folder-open"></i> Explorar los archivos de la carpeta "{basename(enlace)}" aquí
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion3.2">
+  3.2. Alineamiento de lecturas contra el genoma indexado
+</div>
+
+<p>
+  Una vez construido el índice del genoma de referencia, se procedió a realizar el alineamiento de las lecturas utilizando la herramienta <strong>HISAT2</strong>. 
+  Esta etapa es fundamental en el análisis de expresión génica, ya que consiste en mapear cada una de las lecturas obtenidas del secuenciador contra el genoma de referencia, 
+  determinando su ubicación exacta en el mismo. 
+</p>
+
+<p>
+  El resultado de este alineamiento permite identificar con precisión las regiones del genoma que han sido transcritas, 
+  lo cual constituye la base para los análisis cuantitativos y funcionales posteriores.
+</p>
+
+<p>
+  Los archivos resultantes de este proceso se encuentran almacenados, en el momento de la generación de este informe, en el siguiente directorio:
+</p>
+
+```{r, echo=FALSE, results="asis"}
+cat(glue::glue('
+<code>{ruta_hisat2_results}</code>
+'), sep = "\n")
+```
+
+<p>
+  Para cada muestra analizada, se generan varios archivos importantes que se describen a continuación:
+</p>
+
+<ul>
+  <li><code>.bam</code> <strong>&rArr;</strong> archivos que contienen las lecturas alineadas, ordenadas y preparadas para su uso en cuantificación y análisis posteriores.</li>
+  <li><code>.bai</code> <strong>&rArr;</strong> índices asociados a los archivos BAM, que facilitan el acceso rápido a regiones específicas dentro de estos archivos.</li>
+  <li><code>.metrics</code> <strong>&rArr;</strong> archivos que resumen métricas relevantes del proceso de alineamiento, tales como porcentaje de lecturas alineadas, calidad y otros indicadores de desempeño.</li>
+  <li><code>_no_aligned_fasq.1.gz</code> y <code>_no_aligned_fasq.2.gz</code> <strong>&rArr;</strong> archivos comprimidos que contienen las lecturas que no pudieron alinearse al genoma, lo que puede indicar lecturas de baja calidad, contaminación o secuencias no presentes en la referencia.</li>
+</ul>
+
+<p>
+  A continuación, se presenta una lista de estos archivos para las muestras que han sido procesadas correctamente:
+</p>
+
+<div class="box-files">
+
+```{r, echo=FALSE, results="asis"}
+if (!dir.exists(ruta_hisat2_results)) {
+  cat(glue::glue('
+    <div class="alert-warning alert-box">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <b>Advertencia</b><br>
+      La ruta especificada no existe o no es accesible:<br>
+      <code>{ruta_hisat2_results}</code>.<br>
+      Asegúrese de proporcionar dicha ruta correctamente en el directorio del proyecto.
+    </div>
+  '), sep = "\n")
+
+} else {
+  alignment_files <- list.files(
+    ruta_hisat2_results,
+    pattern = "(\\.bam$|\\.bai$|\\.metrics$|_no_aligned.fastq\\.(1|2)\\.gz$)",
+    full.names = FALSE
+  )
+  
+  if (length(alignment_files) > 0) {
+    cat("<ul>\n")
+    for (f in alignment_files) {
+      enlace <- file.path(ruta_hisat2_results, f)
+      enlace <- paste0("file://", enlace)
+
+      # Asignar clase según la extensión
+      clase <- if (grepl("\\.html$", f)) {
+        "file-html"
+      } else if (grepl("\\.zip$", f)) {
+        "file-zip"
+      } else if (grepl("\\.fastq(\\..+)?\\.gz$", f)) {
+        "file-fastqgz"
+      } else if (grepl("\\.bam$", f)) {
+        "file-bam"
+      } else if (grepl("\\.bai$", f)) {
+        "file-bai"
+      } else if (grepl("\\.sam$", f)) {
+        "file-sam"
+      } else if (grepl("\\.metrics$", f)) {
+        "file-metrics"
+      } else if (grepl("\\.ht2$", f)) {
+        "file-ht2"
+      } else {
+        "file-default"
+      }
+
+      cat(sprintf('<li class="%s"><a href="%s" target="_blank">%s</a></li>\n', clase, enlace, f))
+    }
+    cat("</ul>\n")
+
+  } else {
+    cat(glue::glue('
+      <div class="alert-warning alert-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <b>Advertencia</b><br>
+        No se encontraron archivos archivos de alineamiento en la ruta especificada:<br>
+        <code>{ruta_hisat2_results}</code>.<br>
+        Asegúrese de proporcionar dicha ruta correctamente y con los archivos necesarios.
+      </div>
+    '), sep = "\n")
+  }
+}
+```
+
+</div>
+
+```{r, echo=FALSE, results="asis"}
+# Para que funcione con rutas absolutas
+enlace <- ruta_hisat2_results_relativa
+
+# Imprimir el enlace
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{enlace}" target="_blank" class="boton-files">
+    <i class="fa-solid fa-folder-open"></i> Explorar los archivos de la carpeta "{basename(enlace)}" aquí
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<div style="height: 5px; background-color: transparent;"></div>
+
+<p>
+  Una vez comentado todo esto y finalizado el alineamiento de las lecturas con el genoma de referencia, el siguiente paso del análisis consistirá en la <a href="4-cuantificacion.html#" class="normalink">cuantificación de la expresión génica</a>, la cuál trataremos en la siguiente sección. A lo largo de las próximas subsecciones se presentarán los resultados derivados de esta cuantificación, incluyendo visualizaciones preliminares de los recuentos, procesos de normalización y análisis estadísticos de la expresión diferencial y funcional.
+</p>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<footer>
+  <a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>

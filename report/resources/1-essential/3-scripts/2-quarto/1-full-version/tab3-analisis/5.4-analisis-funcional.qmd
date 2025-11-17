@@ -1,0 +1,624 @@
+---
+title: "Bulk RNA-Seq Report"
+
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+params:
+  project_path: ""
+  experiment_name: ""
+  report_version: ""
+---
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{=html}
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta..."/>
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+```
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Incluir Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS | 5.4. ANÁLISIS FUNCIONAL Y ENRIQUECIMIENTO -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{r}
+library(stringr)
+library(glue)
+library(fs)
+library(dplyr)
+
+# Rutas clave
+ruta_qmd <- getwd()
+ruta_bulk_rna_seq_pipeline <- file.path("..", "..", "..", "..", "..", "..")
+ruta_bulk_rna_seq_pipeline_absoluta <- normalizePath(ruta_bulk_rna_seq_pipeline)
+nombre_proyecto <- basename(params$project_path)
+nombre_experimento <- basename(params$experiment_name)
+
+
+# Rutas de resultados Nextflow
+ruta_nextflow_results <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results")
+ruta_proyecto_relativa <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results", "1-project-data", nombre_proyecto)
+
+
+# Ruta donde están los resultados de enriquecimiento
+ruta_enrichment <- file.path(params$project_path, "Resultados", nombre_experimento, "Enrichment")
+ruta_enrichment_relativa <- file.path(ruta_proyecto_relativa, "Resultados", nombre_experimento, "Enrichment")
+
+
+# Archivos
+archivos_enrichment <- list.files(ruta_enrichment, pattern = "^Enrichment_.*\\.(pdf|xls)$", full.names = TRUE)
+archivos_enrichment_relativa <- list.files(ruta_enrichment_relativa, pattern = "^Enrichment_.*\\.(pdf|xls)$", full.names = TRUE)
+
+
+# Extraer categoría funcional y comparación
+info_archivos <- str_match(
+  basename(archivos_enrichment_relativa),
+  "^Enrichment_((?:GO_(?:BP|CC|MF)|KEGG))_([^_]+_vs_[^_]+)_"
+)
+
+
+# Crear un data.frame con columnas útiles
+df_info <- data.frame(
+  ruta_archivo = archivos_enrichment_relativa,
+  categoria_funcional = info_archivos[,2],
+  comparacion = info_archivos[,3],
+  tipo = tools::file_ext(archivos_enrichment_relativa),
+  stringsAsFactors = FALSE
+)
+
+
+# Reemplazar "_" por ":" en la columna 'categoria_funcional'
+df_info$categoria_funcional <- str_replace_all(df_info$categoria_funcional, "_", ":")
+
+# Reemplazar "_" por " " en la columna 'comparacion'
+df_info$comparacion <- str_replace_all(df_info$comparacion, "_", " ")
+```
+
+
+<div class="informe-titulo-tab">
+  <h1>Pestaña</h1>
+  <h2>Análisis bioinformático completo</h2>
+</div>
+
+<div class="informe-titulo-seccion">
+  <h1>Sección 5</h1>
+  <h2>Análisis estadístico de la expresión génica</h2>
+</div>
+
+<div class="informe-titulo-subseccion-unique">
+  <h1>Subsección 5.4</h1>
+  <h2>Análisis funcional y enriquecimiento</h2>
+</div>
+
+<div class="flecha-abajo">
+  ▼
+</div>
+
+
+<div class="informe-resumen">
+  <h2>Resumen</h2>
+
+  <p>
+    Este apartado tiene como objetivo interpretar los resultados del análisis de expresión diferencial desde una perspectiva <strong>biológica funcional</strong>, utilizando herramientas de <strong>análisis de enriquecimiento</strong>. Una vez identificados los <strong>genes diferencialmente expresados (DEGs)</strong> entre condiciones experimentales, se evalúa si determinadas <em>funciones biológicas</em>, <em>procesos celulares</em> o <em>rutas metabólicas</em> están sobrerrepresentadas entre estos genes.
+  </p>
+
+  <p>
+    Para ello, se emplean bases de datos ampliamente reconocidas como <strong>Gene Ontology</strong> (categorías <em>Biological Process</em>, <em>Molecular Function</em> y <em>Cellular Component</em>) y <strong>KEGG</strong>, que permiten relacionar los genes con funciones conocidas en organismos modelo. El análisis se realiza de forma individual para cada <em>comparación por pares</em> entre condiciones, lo que permite contextualizar los efectos de cada contraste experimental dentro de marcos funcionales específicos.
+  </p>
+
+  <p>
+    Cada conjunto de resultados incluye una tabla interactiva con los <strong>términos enriquecidos</strong> y sus estadísticas asociadas (como valores <em>p</em> ajustados y número de genes implicados), así como <strong>representaciones gráficas</strong> (barplots o dotplots) que resumen visualmente los hallazgos más relevantes. Esta información facilita la priorización de rutas y procesos que podrían estar involucrados en las diferencias observadas, ofreciendo hipótesis biológicas interpretables.
+  </p>
+
+  <p>
+    En conjunto, este análisis constituye una pieza clave para vincular los cambios transcripcionales con mecanismos funcionales subyacentes, aportando <strong>valor biológico</strong> y <strong>contexto mecanístico</strong> a los datos obtenidos en las etapas anteriores del pipeline de expresión génica.
+  </p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo-toc">
+  Tabla de contenidos de esta subsección
+</div>
+
+
+```{=html}
+```{r, results="asis"}
+cat('
+<div class="toc">
+  <ul>
+    <li>
+      <a href="5-Analisis-estadistico.html#tab3-seccion5">
+        5<span>.</span> Análisis estadístico de la expresión génica
+      </a>
+      <ul>
+        <li>
+          <a href="#tab3-seccion5.4">
+            5.4. Análisis funcional y enriquecimiento
+          </a>
+          <ul>
+')
+
+comparaciones <- unique(df_info$comparacion)
+for (i in seq_along(comparaciones)) {
+  comp <- comparaciones[i]
+  cat(glue::glue('
+            <li>
+              <a href="#tab3-seccion5.4.{i}">
+                5.4.{i}. Comparación: {comp}
+              </a>
+              <ul>
+  '))
+
+  subset_comp <- df_info[df_info$comparacion == comp, ]
+  categorias <- unique(subset_comp$categoria_funcional)
+
+  for (j in seq_along(categorias)) {
+    categ <- categorias[j]
+    cat(glue::glue('
+                <li>
+                  <a href="#tab3-seccion5.4.{i}.{j}">
+                    5.4.{i}.{j}. Categoría funcional: {categ}
+                  </a>
+                </li>
+    '))
+  }
+
+  cat('
+              </ul>
+            </li>
+  ')
+}
+
+cat('
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+')
+```
+```
+
+```{=html}
+```
+
+
+
+
+
+
+
+
+
+
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- REDACCIÓN -->
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion5.4">
+  5.4. Análisis funcional y enriquecimiento
+</div>
+
+<p>
+  Una vez identificados los genes diferencialmente expresados (DEG) entre condiciones experimentales, resulta fundamental interpretar estos cambios en un contexto biológico más amplio. 
+  Para ello, se lleva a cabo un <strong>análisis funcional y de enriquecimiento</strong>, que permite detectar si ciertas funciones, procesos biológicos o rutas metabólicas están representadas de forma significativa entre los genes alterados.
+</p>
+
+<p>
+  Este tipo de análisis se basa en comparar la lista de genes identificados como diferencialmente expresados frente a bases de datos funcionales ampliamente validadas, con el fin de identificar categorías que aparecen más frecuentemente de lo esperado por azar.
+</p>
+
+<p>
+  En este proyecto, el análisis de enriquecimiento se ha realizado para cada una de las comparaciones entre condiciones, utilizando las siguientes bases de datos:
+</p>
+
+<ul>
+  <li><strong>Gene Ontology - Biological Process (GO:BP)</strong> <strong>&rArr;</strong> Procesos biológicos en los que participan los genes, como "respuesta al estrés" o "regulación del ciclo celular".</li>
+  <li><strong>Gene Ontology - Molecular Function (GO:MF)</strong> <strong>&rArr;</strong> Funciones moleculares de los productos génicos, como "actividad transcriptasa inversa" o "unión a ATP".</li>
+  <li><strong>Gene Ontology - Cellular Component (GO:CC)</strong> <strong>&rArr;</strong> Localización o complejos celulares donde actúan los productos génicos, como "membrana plasmática" o "nucleoplasma".</li>
+  <li><strong>KEGG</strong> <strong>&rArr;</strong> Rutas metabólicas y de señalización conocidas, como "vía MAPK", "biosíntesis de flavonoides" o "respuesta a patógenos".</li>
+</ul>
+
+<p>
+  Para cada categoría y comparación, se presentan dos tipos de resultados:
+</p>
+
+<ul>
+  <li>Un archivo <strong>PDF</strong> con una representación visual de los términos más enriquecidos (normalmente barplots o dotplots).</li>
+  <li>Un archivo <strong>Excel (.xls)</strong> con el listado detallado de todos los términos significativos, ordenados por valor de <em>p</em> o FDR, junto con el número de genes implicados.</li>
+</ul>
+
+<p>
+  A continuación, se listan los resultados de enriquecimiento funcional para cada comparación analizada en este experimento, organizados por categorías GO (BP, CC y MF) y KEGG.
+</p>
+
+<div class="box-files-nested" style="margin-top: 30px;">
+
+```{r, results='asis'}
+# Función para asignar clase por extensión
+asignar_clase <- function(nombre_archivo) {
+  if (grepl("\\.html$", nombre_archivo)) {
+    "file-html"
+  } else if (grepl("\\.zip$", nombre_archivo)) {
+    "file-zip"
+  } else if (grepl("\\.fastq(\\..+)?\\.gz$", nombre_archivo)) {
+    "file-fastqgz"
+  } else if (grepl("\\.bam$", nombre_archivo)) {
+    "file-bam"
+  } else if (grepl("\\.bai$", nombre_archivo)) {
+    "file-bai"
+  } else if (grepl("\\.sam$", nombre_archivo)) {
+    "file-sam"
+  } else if (grepl("\\.metrics$", nombre_archivo)) {
+    "file-metrics"
+  } else if (grepl("\\.ht2$", nombre_archivo)) {
+    "file-ht2"
+  } else if (grepl("\\.xlsx$", nombre_archivo)) {
+    "file-xlsx"
+  } else if (grepl("\\.xls$", nombre_archivo)) {
+    "file-xls"
+  } else if (grepl("\\.pdf$", nombre_archivo)) {
+    "file-pdf"
+  } else {
+    "file-default"
+  }
+}
+
+# Verificar si hay archivos
+if (nrow(df_info) == 0) {
+  cat('<p><em>No se encontraron archivos de enriquecimiento funcional en la ruta especificada.</em></p>\n')
+} else {
+  cat("<ol>\n")  # Lista numerada de comparaciones
+  
+  for (comp in unique(df_info$comparacion)) {
+    cat(glue::glue('<li><strong>{comp}</strong>\n<ul style="margin-top: 4px; margin-bottom: 4px;">\n'))
+    
+    # Filtrar archivos de esta comparación
+    subset_comp <- df_info[df_info$comparacion == comp, ]
+    
+    for (cat in unique(subset_comp$categoria_funcional)) {
+      subset_cat <- subset_comp[subset_comp$categoria_funcional == cat, ]
+      
+      # Obtener rutas
+      ruta_archivo_xls <- subset_cat$ruta_archivo[subset_cat$tipo == "xls"]
+      ruta_archivo_pdf <- subset_cat$ruta_archivo[subset_cat$tipo == "pdf"]
+      
+      # Asignar clases
+      clase_xls <- if (length(ruta_archivo_xls)) asignar_clase(ruta_archivo_xls) else NULL
+      clase_pdf <- if (length(ruta_archivo_pdf)) asignar_clase(ruta_archivo_pdf) else NULL
+      
+      # Mostrar si existen
+      cat(glue::glue('<li style="margin: 0;"><strong>{cat}</strong>\n<ul style="margin: 0 0 4px 12px;">\n'))
+      
+      if (length(ruta_archivo_xls)) {
+        cat(glue::glue('<li class="{clase_xls}" style="margin: 0;"><a href="{ruta_archivo_xls}" target="_blank">Tabla de resultados (.xls)</a></li>\n'))
+      }
+      
+      if (length(ruta_archivo_pdf)) {
+        cat(glue::glue('<li class="{clase_pdf}" style="margin: 0;"><a href="{ruta_archivo_pdf}" target="_blank">Gráfico resumen (.pdf)</a></li>\n'))
+      }
+      
+      cat('</ul></li>\n')
+    }
+    
+    cat("</ul></li>\n\n")
+  }
+  
+  cat("</ol>\n")
+}
+```
+
+</div>
+
+```{r, results="asis"}
+# Imprimir el enlace
+cat(glue::glue('
+<p style="text-align:center; margin-top: 4px; margin-bottom: 2px;">
+  <a href="{ruta_enrichment_relativa}" target="_blank" class="boton-files">
+    <i class="fa-solid fa-folder-open"></i> Explorar los archivos de la carpeta "{basename(ruta_enrichment_relativa)}" aquí
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Seguidamente, se presenta un resumen estructurado de los análisis de enriquecimiento funcional realizados para cada comparación entre condiciones experimentales. 
+  Para cada una de ellas se han considerado cuatro categorías funcionales principales: <strong>GO:BP</strong> (procesos biológicos), <strong>GO:MF</strong> (funciones moleculares), <strong>GO:CC</strong> (componentes celulares) y <strong>KEGG</strong> (rutas metabólicas y de señalización). 
+</p>
+
+<p>
+  En los siguientes apartados se profundiza en los resultados obtenidos por comparación. Cada sección incluye:
+</p>
+
+<ul>
+  <li>Una visualización <strong>interactiva</strong> de las tablas de términos enriquecidos, con información como valores de p ajustados (FDR), número de genes implicados y descripción funcional.</li>
+  <li>Un enlace al <strong>documento PDF</strong> correspondiente, que resume gráficamente los términos más significativos (normalmente mediante barplots o dotplots).</li>
+</ul>
+
+<p>
+  Este análisis permite identificar las funciones biológicas y rutas más relevantes en cada contexto experimental, facilitando así la interpretación biológica de los genes diferencialmente expresados.
+</p>
+
+```{r}
+library(readxl)
+library(DT)
+library(htmltools)
+library(glue)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+
+secciones <- tagList()  # Contenedor general
+
+comparaciones <- unique(df_info$comparacion)
+
+for (comp in comparaciones) {
+  # Contador para el título de la comparación
+  i <- 1
+
+  # Título general de la comparación
+  seccion_comp <- tagList(
+    HTML(glue('
+      <div style="height: 15px; background-color: transparent;"></div>
+
+      <div class="titulo3" id="tab3-seccion5.4.{i}" style="padding-bottom: 10px;">
+        5.4.{i}. Comparación: {comp}
+      </div>
+
+      <div style="height: 15px; background-color: transparent;"></div>
+
+      <p style="margin-bottom: 22px;">
+        La comparación <strong>{comp}</strong> corresponde al análisis diferencial de expresión entre dos condiciones biológicas o experimentales específicas dentro del diseño del estudio. Este análisis tiene como objetivo identificar los genes cuya actividad transcripcional varía significativamente entre ambos grupos, lo que puede reflejar procesos fisiológicos, respuestas celulares o mecanismos moleculares relevantes.
+      </p>
+
+      <p style="margin-bottom: 5px;">
+        A partir de los genes diferencialmente expresados (DEGs) detectados, se han llevado a cabo análisis de enriquecimiento funcional que permiten asociar dichos genes con funciones biológicas, procesos celulares o rutas metabólicas. De este modo, se busca interpretar los cambios observados en un contexto funcional más amplio, facilitando la comprensión de las posibles implicaciones biológicas derivadas de la comparación <strong>{comp}</strong>.
+      </p>
+    '), sep = "\n")
+  )
+  
+  # Subset para esta comparación
+  subset_comp <- df_info[df_info$comparacion == comp, ]
+
+  categorias <- unique(subset_comp$categoria_funcional)
+  
+  # Contador para el título de la comparación
+  j <- 1
+
+  # Iniciar el bucle
+  for (categ in categorias) {
+    # Escoger la categoría actual
+    subset_categ <- subset_comp[subset_comp$categoria_funcional == categ, ]
+    
+    # Rutas relevantes
+    ruta_archivo_xls <- subset_categ$ruta_archivo[subset_categ$tipo == "xls"]
+    ruta_archivo_pdf <- subset_categ$ruta_archivo[subset_categ$tipo == "pdf"]
+    
+    if (length(ruta_archivo_xls) > 0) {
+      tmp <- read.csv(ruta_archivo_xls, sep = "\t", row.names = 1, check.names = FALSE)
+      if (any(duplicated(rownames(tmp)))) {
+        rownames(tmp) <- make.unique(rownames(tmp))
+      }
+      
+      seccion_categ <- tagList(
+        HTML(glue('
+          <div style="height: 10px; background-color: transparent;"></div>
+
+          <div class="titulo4" id="tab3-seccion5.4.{i}.{j}" style="padding-bottom: 10px;">
+            5.4.{i}.{j}. Categoría funcional: {categ}
+          </div>
+
+          <div style="height: 10px; background-color: transparent;"></div>
+        '), sep = "\n"),
+        
+        HTML(glue('
+          <p style="margin-bottom: 22px;">
+            La presente sección se centra en la categoría funcional <strong>{categ}</strong>, la cual agrupa un conjunto de genes asociados a funciones biológicas específicas que podrían estar involucradas en los cambios observados entre las condiciones comparadas en <strong>{comp}</strong>. El análisis de enriquecimiento permite identificar si esta categoría está sobrerrepresentada entre los genes diferencialmente expresados, lo que puede señalar una implicación funcional relevante en el contexto experimental.
+          </p>
+
+          <p style="margin-bottom: 22px;">
+            A continuación se presenta la tabla con los términos enriquecidos dentro de esta categoría, junto con los parámetros estadísticos asociados. Estos resultados permiten priorizar funciones o procesos celulares que podrían estar siendo modulados como respuesta al tratamiento o condición evaluada.
+          </p>
+        '), sep = "\n"),
+        
+        htmltools::div(
+          class = "scroll-y-max-500",
+          DT::datatable(
+            tmp,
+            options = list(
+              scrollX = TRUE,
+              paging = FALSE,
+              lengthChange = FALSE,
+              language = list(url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json')
+            ),
+            class = 'stripe hover compact'
+          ),
+          tags$hr()
+        ),
+        
+        HTML(glue('
+          <p style="text-align:center; margin-top: 17px; margin-bottom: 20px">
+            <a href="{ruta_archivo_xls}" 
+              download="{basename(ruta_archivo_xls)}" 
+              class="boton-file-download">
+              <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_archivo_xls)}"
+            </a>
+          </p>
+
+          <p style="margin-bottom: 22px;">
+            Acto seguido, se presentan las visualizaciones generadas a partir del análisis de enriquecimiento funcional para la categoría <strong>{categ}</strong>. Estas gráficas permiten explorar de forma intuitiva los términos o rutas biológicas sobrerrepresentadas, así como su relevancia estadística y su relación con los genes detectados en la comparación <strong>{comp}</strong>.
+          </p>
+
+          <p style="margin-bottom: 22px;">
+            Dependiendo del tipo de análisis realizado, los resultados pueden incluir gráficos de barras con los términos GO más significativos, mapas de rutas metabólicas (como los proporcionados por KEGG), o representaciones tipo grafo que reflejan las conexiones funcionales entre los términos enriquecidos. Estas visualizaciones complementan la tabla de resultados y ayudan a interpretar los datos desde una perspectiva biológica más integrada.
+          </p>
+        '), sep = "\n"),
+        
+        if (length(ruta_archivo_pdf) > 0) {
+          HTML(glue('
+          <div class="iframe-container" style="margin-top: 38px;">
+            <iframe src="{ruta_archivo_pdf}" frameborder="0" style="height: 700px;"></iframe>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 25px; margin-top: 30px; margin-bottom: 15px;">
+            <a href="{ruta_archivo_pdf}"
+              target="_blank" 
+              class="boton-iframe">
+              <i class="fa-solid fa-file-lines"></i> Abrir archivo en una página nueva
+            </a>
+
+            <a href="{ruta_archivo_pdf}"
+              download="{basename(ruta_archivo_pdf)}"
+              class="boton-iframe-download">
+              <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo
+            </a>
+          </div>
+        '), sep = "\n") 
+        
+        } else {
+          HTML(glue('
+          <div class="alert-warning alert-box">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <b>Advertencia</b><br>
+            No se encontró el documento PDF con los gráficos para esta categoría en la ruta especificada:<br>
+            <code>{ruta_archivo_pdf}</code>.<br>
+            Asegúrese de proporcionar dichos archivos correctamente definidos en esta ruta específica.
+          </div>
+          '), sep = "\n")
+        }
+      )
+      
+      # Agregar la subsección de categoría a la sección de la comparación
+      seccion_comp <- tagAppendChild(seccion_comp, seccion_categ)
+    }
+
+    # Incrementar el contador del título de la categoría
+    j <- j + 1
+  }
+  
+  # Agregar la sección completa de esta comparación al contenedor principal
+  secciones <- tagAppendChild(secciones, seccion_comp)
+
+  # Incrementar el contador del título de la comparación
+  i <- i + 1
+}
+
+# Mostrar el contenido final en el documento
+browsable(secciones)
+```
+
+
+<div class="divider"></div>
+
+<p>
+  Con este análisis funcional y de enriquecimiento se culmina el flujo de trabajo completo de análisis de expresión génica, desde la evaluación inicial de la calidad de las lecturas hasta la interpretación biológica de los genes diferencialmente expresados. 
+  A lo largo de este proceso, hemos transformado datos brutos de secuenciación en información biológicamente significativa, permitiendo no solo identificar genes con patrones de expresión relevantes, sino también contextualizarlos dentro de rutas y procesos celulares clave. 
+  Este enfoque sistemático no solo proporciona una comprensión más profunda de los mecanismos moleculares implicados en las condiciones estudiadas, sino que también sienta las bases para futuras hipótesis experimentales, validaciones funcionales o estrategias terapéuticas.
+</p>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<footer>
+  <a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>

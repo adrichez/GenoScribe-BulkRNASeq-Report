@@ -1,0 +1,16 @@
+stringr
+glue
+fs
+dplyr
+htmlwidgets
+DT
+ggplot2
+plotly
+scales
+tidyverse
+tibble
+tidyr
+readr
+purrr
+forcats
+lubridate

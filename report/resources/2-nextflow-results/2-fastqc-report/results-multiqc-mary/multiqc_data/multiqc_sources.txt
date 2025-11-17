@@ -1,0 +1,13 @@
+Module	Section	Sample Name	Source
+FastQC	all_sections	PX_Cd0_Rep1_R1	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/PX_Cd0_Rep1_R1_fastqc.zip
+FastQC	all_sections	PX_Cd0_Rep1_R2	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/PX_Cd0_Rep1_R2_fastqc.zip
+FastQC	all_sections	PX_Cd0_Rep2_R1	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/PX_Cd0_Rep2_R1_fastqc.zip
+FastQC	all_sections	PX_Cd0_Rep2_R2	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/PX_Cd0_Rep2_R2_fastqc.zip
+FastQC	all_sections	PX_Cd0_Rep3_R1	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/PX_Cd0_Rep3_R1_fastqc.zip
+FastQC	all_sections	PX_Cd0_Rep3_R2	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/PX_Cd0_Rep3_R2_fastqc.zip
+FastQC	all_sections	WT_Cd0_Rep1_R1	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/WT_Cd0_Rep1_R1_fastqc.zip
+FastQC	all_sections	WT_Cd0_Rep1_R2	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/WT_Cd0_Rep1_R2_fastqc.zip
+FastQC	all_sections	WT_Cd0_Rep2_R1	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/WT_Cd0_Rep2_R1_fastqc.zip
+FastQC	all_sections	WT_Cd0_Rep2_R2	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/WT_Cd0_Rep2_R2_fastqc.zip
+FastQC	all_sections	WT_Cd0_Rep3_R1	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/WT_Cd0_Rep3_R1_fastqc.zip
+FastQC	all_sections	WT_Cd0_Rep3_R2	/workspace/GenoScribe/2-pipelines/1-bulk-rna-seq/work/8f/e5c75ff9cf0755f11924a91cc9e588/Pre_fastqc_results/WT_Cd0_Rep3_R2_fastqc.zip

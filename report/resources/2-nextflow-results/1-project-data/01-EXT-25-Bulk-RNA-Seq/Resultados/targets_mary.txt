@@ -1,0 +1,7 @@
+Filename	Name	Type
+PX_Cd0_Rep1	PX_0_1	pex11a-C
+PX_Cd0_Rep2	PX_0_2	pex11a-C
+PX_Cd0_Rep3	PX_0_3	pex11a-C
+WT_Cd0_Rep1	WT_0_1	px-ck-C
+WT_Cd0_Rep3	WT_0_3	px-ck-C
+

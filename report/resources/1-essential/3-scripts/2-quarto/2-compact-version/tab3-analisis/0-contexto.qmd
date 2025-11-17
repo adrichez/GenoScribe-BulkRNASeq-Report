@@ -1,0 +1,631 @@
+---
+title: "Bulk RNA-Seq Report"
+
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+params:
+  project_path: ""
+  experiment_name: ""
+  report_version: ""
+---
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{=html}
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta..."/>
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+```
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Incluir Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS 16S | 0. CONTEXTO -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{r}
+# Cargar librerías
+library(glue)
+library(fs)
+library(stringr)
+library(dplyr)
+library(tidyverse)
+library(magrittr)
+library(DT)
+library(htmltools)
+library(purrr)
+library(tibble)
+
+
+# Rutas clave
+ruta_qmd <- getwd()
+ruta_bulk_rna_seq_pipeline <- file.path("..", "..", "..", "..", "..", "..")
+ruta_bulk_rna_seq_pipeline_absoluta <- normalizePath(ruta_bulk_rna_seq_pipeline)
+nombre_proyecto <- basename(params$project_path)
+nombre_experimento <- basename(params$experiment_name)
+
+
+# Rutas de resultados Nextflow
+ruta_nextflow_results <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results")
+ruta_proyecto_relativa <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results", "1-project-data", nombre_proyecto)
+
+
+# Rutas para el archivo de metadatos
+targets_experimento <- paste0("targets_", nombre_experimento, ".txt")
+ruta_targets_experimento <- file.path(params$path_project, "Resultados", targets_experimento)
+ruta_targets_experimento_relativa <- file.path(ruta_proyecto_relativa, "Resultados", targets_experimento)
+
+
+# Ruta de la carpeta donde están los fastq
+reads_down_select_experimento <- paste0("reads_down_select_", nombre_experimento)
+ruta_reads_down_select_experimento <- file.path(params$path_project, "Analisis", reads_down_select_experimento)
+ruta_reads_down_select_experimento_relativa <- file.path(ruta_proyecto_relativa, "Analisis", reads_down_select_experimento)
+
+
+# Ruta donde están los informes de calidad
+ruta_Pre_fastqc_results <- file.path(params$path_project, "Analisis", nombre_experimento, "Pre_fastqc_results")
+ruta_Pre_fastqc_results_relativa <- file.path(ruta_proyecto_relativa, "Analisis", nombre_experimento, "Pre_fastqc_results")
+
+
+# Obtener archivos .html de FastQC
+archivos_html <- dir_ls(ruta_Pre_fastqc_results, regexp = "\\.html$")
+
+# Extraer IDs de muestra
+ids_muestras <- archivos_html |>
+  path_file() |>
+  str_replace("_fastqc\\.html$", "") |>
+  str_remove("_(R1|R2)$") |>
+  unique()
+
+
+# Leer targets
+targets <- read.table(ruta_targets_experimento_relativa, header = TRUE, fill = TRUE, stringsAsFactors = FALSE)
+
+
+# Listar archivos fastqc y fastq
+archivos_fastqc <- list.files(ruta_Pre_fastqc_results, pattern = "_fastqc\\.html$", full.names = FALSE)
+archivos_fastq <- list.files(ruta_reads_down_select_experimento, pattern = "\\.fastq\\.gz$", full.names = FALSE)
+
+
+# Extraer identificadores base
+ids_fastqc <- unique(gsub("(_R[12])?_fastqc\\.html$", "", archivos_fastqc))
+ids_fastq <- unique(gsub("_R[12]\\.fastq\\.gz$", "", archivos_fastq))
+ids_targets <- targets$Filename
+
+
+# Identificar diferencias
+fastqc_no_targets <- setdiff(ids_fastqc, ids_targets)
+targets_no_fastqc <- setdiff(ids_targets, ids_fastqc)
+targets_no_reads <- setdiff(ids_targets, ids_fastq)
+
+# Ruta absoluta al informe de multiqc
+ruta_multiqc_report <- file.path(ruta_nextflow_results, "2-fastqc-report", paste0("results-multiqc-", nombre_experimento), "multiqc_report.html")
+
+
+# Ruta donde están los resultados de DEG y volcano
+ruta_resultados_experimento <- file.path(ruta_proyecto_relativa, "Resultados", nombre_experimento)
+
+# Buscar archivos .xlsx y .pdf
+archivos_deg <- list.files(ruta_resultados_experimento, pattern = "^DEG_.*\\.xlsx$", full.names = TRUE)
+archivos_volcano <- list.files(ruta_resultados_experimento, pattern = "^Volcano_plot_.*\\.pdf$", full.names = TRUE)
+
+# Extraer nombres base de comparación
+comparaciones <- gsub("^DEG_(.*)\\.xlsx$", "\\1", basename(archivos_deg))
+comparaciones <- gsub("_", " ", comparaciones)
+
+
+# Ruta donde están los resultados de enriquecimiento
+ruta_enrichment <- file.path(ruta_proyecto_relativa, "Resultados", nombre_experimento, "Enrichment")
+
+# Archivos
+archivos_enrichment <- list.files(ruta_enrichment, pattern = "^Enrichment_.*\\.(pdf|xls)$", full.names = TRUE)
+
+# Extraer categoría funcional y comparación
+info_archivos <- str_match(
+  basename(archivos_enrichment),
+  "^Enrichment_((?:GO_(?:BP|CC|MF)|KEGG))_([^_]+_vs_[^_]+)_"
+)
+
+# Crear un data.frame con columnas útiles
+df_info <- data.frame(
+  ruta_archivo = archivos_enrichment,
+  file_ruta_archivo = gsub(" ", "%20", paste0("file:///", archivos_enrichment)),
+  categoria_funcional = info_archivos[,2],
+  comparacion = info_archivos[,3],
+  tipo = tools::file_ext(archivos_enrichment),
+  stringsAsFactors = FALSE
+)
+
+# Reemplazar "_" por ":" en la columna 'categoria_funcional'
+df_info$categoria_funcional <- str_replace_all(df_info$categoria_funcional, "_", ":")
+
+# Reemplazar "_" por " " en la columna 'comparacion'
+df_info$comparacion <- str_replace_all(df_info$comparacion, "_", " ")
+```
+
+
+<div class="informe-titulo-tab">
+  <h1>Pestaña</h1>
+  <h2>Análisis bioinformático completo</h2>
+</div>
+
+<div class="informe-titulo-seccion-unique">
+  <h1>Sección</h1>
+  <h2>Introducción Contextual</h2>
+</div>
+
+<div class="flecha-abajo">
+  ▼
+</div>
+
+
+<div class="informe-resumen">
+  <p>
+    Esta pestaña tiene como propósito ofrecer una <strong>visión contextual y estructurada</strong> del análisis de RNA-Seq realizado mediante el pipeline <code>miARma‑seq</code>, actuándo como una <strong>guía introductoria</strong> al informe, describiendo el enfoque general seguido, la lógica de su estructura y los contenidos que el lector encontrará en cada una de las secciones posteriores.
+  </p>
+
+  <p>
+    En este sentido, se presenta un resumen del proceso analítico llevado a cabo, desde la evaluación inicial de la calidad de las muestras hasta los análisis funcionales realizados a partir de los genes diferencialmente expresados. Cada etapa clave del pipeline se desarrolla en su propia pestaña o subsección específica dentro del informe, permitiendo al lector acceder fácilmente a los contenidos relevantes según su interés. Esta estructura modular favorece una lectura progresiva y ordenada, adaptada tanto a perfiles técnicos como biológicos.
+  </p>
+
+  <p>
+    A continuación, se describe brevemente el contenido de cada bloque principal:
+  </p>
+
+  <ul>
+    <li>
+      <strong>1. Revisión inicial del conjunto de muestras y metadatos:</strong> Se ofrece una visión general de las muestras analizadas y de su distribución según condiciones experimentales. Esta revisión permite contextualizar el diseño del experimento y verificar la consistencia de los datos antes de iniciar el análisis técnico.
+    </li>
+
+    <li>
+      <strong>2. Evaluación de la calidad de las lecturas:</strong> Esta sección está dividida en dos niveles: un análisis conjunto de todas las muestras mediante <code>MultiQC</code>, que permite detectar patrones globales de calidad, y una evaluación detallada por muestra mediante <code>FastQC</code>, que se desglosa en dos subsecciones:
+      <ul>
+        <li>
+          <strong>2.2.1. Lecturas Forward</strong> y <strong>2.2.2. Lecturas Backward</strong>: Para cada dirección de lectura se presentan los informes individuales de calidad de cada muestra, lo cual permite examinar con precisión métricas clave como la calidad por base, el contenido GC, o la presencia de secuencias contaminantes.
+        </li>
+      </ul>
+    </li>
+
+    <li>
+      <strong>3. Alineamiento de las lecturas al genoma de referencia:</strong> Aquí se documentan los pasos necesarios para mapear las lecturas al genoma, incluyendo la construcción del índice genómico con <code>HISAT2</code> y el posterior alineamiento de cada muestra. Esta etapa es crucial para asegurar una cuantificación precisa de la expresión génica.
+    </li>
+
+    <li>
+      <strong>4. Cuantificación de la expresión génica:</strong> Una vez alineadas las lecturas, se procede a contar los niveles de expresión génica mediante <code>featureCounts</code>. La información se presenta en varios niveles:
+      <ul>
+        <li>
+          Visualización de la matriz de conteos y de la longitud génica.
+        </li>
+        <li>
+          Exploraciones gráficas sobre el número de lecturas asignadas, genes detectados y distribución de los niveles de expresión por muestra.
+        </li>
+      </ul>
+    </li>
+
+    <li>
+      <strong>5. Análisis estadístico de la expresión génica:</strong> Este bloque constituye el núcleo analítico del informe, en el que se desarrollan las etapas de normalización y análisis estadístico:
+      <ul>
+        <li>
+          <strong>5.1. Normalización:</strong> Se aplica una transformación a los datos crudos para corregir sesgos técnicos, evaluando luego su impacto mediante visualizaciones comparativas.
+        </li>
+        <li>
+          <strong>5.2. Control de calidad post-normalización:</strong> Se valida que la normalización haya sido efectiva y no haya introducido distorsiones.
+        </li>
+        <li>
+          <strong>5.3. Análisis de expresión diferencial:</strong> Se identifican genes con diferencias significativas de expresión entre condiciones, usando <code>edgeR</code> y <code>NOISeq</code>. Este apartado se desarrolla de forma visual e interpretativa en su propia pestaña.
+        </li>
+        <li>
+          <strong>5.4. Análisis funcional:</strong> A partir de los genes diferencialmente expresados, se realiza un enriquecimiento funcional utilizando las bases de datos <code>GO</code> y <code>KEGG</code>, asociando los cambios de expresión con funciones biológicas específicas o rutas metabólicas.
+        </li>
+      </ul>
+    </li>
+
+    <li>
+      <strong>6. Conclusiones y perspectivas:</strong> Finalmente, se sintetizan los hallazgos más relevantes del análisis, discutiendo sus posibles implicaciones biológicas y abriendo la puerta a futuros trabajos o hipótesis de investigación.
+    </li>
+  </ul>
+
+  <p>
+    En definitiva, esta pestaña tiene un rol fundamental como <strong>punto de entrada al informe</strong>, contextualizando el análisis realizado, explicando su organización lógica y facilitando la navegación a lo largo de las diferentes etapas del pipeline. La inclusión de secciones independientes para cada proceso, desde la calidad de las lecturas hasta la interpretación funcional, permite al lector abordar el informe de forma flexible, pudiendo centrarse tanto en la visión global como en aspectos técnicos o biológicos concretos según su interés.
+  </p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo-toc">
+  Tabla de contenidos general
+</div>
+
+<p>
+  Se presenta a continuación el índice interactivo de la pestaña de <strong>Análisis</strong>, el cual organiza de forma estructurada cada etapa del proceso seguido. Desde aquí, es posible navegar fácilmente entre las distintas secciones del informe.
+</p>
+
+```{=html}
+```{r, echo=FALSE, results="asis"}
+cat('
+<div class="toc">
+  <ul>
+    <!-- Documento 1 -->
+    <li>
+      <a href="1-revision-inicial.html#tab3-seccion1">
+        1<span>.</span> Revisión inicial del conjunto de muestras y metadatos
+      </a>
+      <ul>
+        <li>
+          <a href="1-revision-inicial.html#tab3-seccion1.1">
+            1.1. Organización y estructura del proyecto
+          </a>
+        </li>
+        <li>
+          <a href="1-revision-inicial.html#tab3-seccion1.2">
+            1.2. Revisión del archivo de metadatos
+          </a>
+        </li>
+        <li>
+          <a href="1-revision-inicial.html#tab3-seccion1.3">
+            1.3. Exploración inicial de las muestras de entrada
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Documento 2 -->
+    <li>
+      <a href="2-evaluacion-calidad.html#tab3-seccion2">
+      2<span>.</span> Evaluación de la calidad de las lecturas
+      </a>
+      <ul>
+        <li>
+          <a href="2-evaluacion-calidad.html#tab3-seccion2.1">
+            2.1. Análisis conjunto de todas las muestras (MultiQC)
+          </a>
+        </li>
+        <li>
+          <a href="2-evaluacion-calidad.html#tab3-seccion2.2">
+            2.2. Análisis individual por muestra (FastQC)
+          </a>
+          <ul>
+            <li>
+              <a href="2-evaluacion-calidad.html#tab3-seccion2.2.1">
+                2.2.1. Evaluación de calidad de lecturas Forward
+              </a>
+              <ul>
+')
+
+i <- 1
+for (id in ids_muestras) {
+  cat(glue::glue('
+                <li>
+                  <a href="2-evaluacion-calidad.html#tab3-seccion2.2.1.{i}">
+                    2.2.1.{i}. Muestra: {id}
+                  </a>
+                </li>
+  \n'))
+  i <- i + 1
+}
+
+cat('
+              </ul>
+            </li>
+            <li>
+              <a href="2-evaluacion-calidad.html#tab3-seccion2.2.2">
+                2.2.2. Evaluación de calidad de lecturas Backward
+              </a>
+              <ul>
+')
+
+i <- 1
+for (id in ids_muestras) {
+  cat(glue::glue('
+            <li>
+              <a href="2-evaluacion-calidad.html#tab3-seccion2.2.2.{i}">
+                2.2.2.{i}. Muestra: {id}
+              </a>
+            </li>
+  \n'))
+  i <- i + 1
+}
+
+cat('
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="2-evaluacion-calidad.html#tab3-seccion2.3">
+            2.3. Reflexiones finales sobre el control de calidad
+          </a>
+      </ul>
+    </li>
+
+    <!-- Documento 3 -->
+    <li>
+      <a href="3-alineamiento.html#tab3-seccion3">
+        3<span>.</span> Alineamiento de las lecturas contra el genoma de referencia
+      </a>
+      <ul>
+        <li>
+          <a href="3-alineamiento.html#tab3-seccion3.1">
+            3.1. Preparación del índice del genoma de referencia
+          </a>
+        </li>
+        <li>
+          <a href="3-alineamiento.html#tab3-seccion3.2">
+            3.2. Alineamiento de lecturas contra el genoma indexado
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Documento 4 -->
+    <li>
+      <a href="4-cuantificacion.html#tab3-seccion4">
+        4<span>.</span> Cuantificación de la expresión genética
+      </a>
+      <ul>
+        <li>
+          <a href="4-cuantificacion.html#tab3-seccion4.1">
+            4.1. Visualización de la matriz de recuentos crudos
+          </a>
+        </li>
+        <li>
+          <a href="4-cuantificacion.html#tab3-seccion4.2">
+            4.2. Visualización de la longitud génica
+          </a>
+        </li>
+        <li>
+          <a href="4-cuantificacion.html#tab3-seccion4.3">
+            4.3. Exploración preliminar de los recuentos crudos
+          </a>
+          <ul>
+            <li>
+              <a href="4-cuantificacion.html#tab3-seccion4.3.1">
+                4.3.1. Total de lecturas asignadas por muestra
+              </a>
+            </li>
+            <li>
+              <a href="4-cuantificacion.html#tab3-seccion4.3.2">
+                4.3.2. Número de genes expresados por muestra
+              </a>
+            </li>
+            <li>
+              <a href="4-cuantificacion.html#tab3-seccion4.3.3">
+                4.3.3. Genes con mayor nivel de expresión total
+              </a>
+            </li>
+            <li>
+              <a href="4-cuantificacion.html#tab3-seccion4.3.4">
+                4.3.4. Distribución de recuentos por muestra (boxplot log10)
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Documento 5 -->
+    <li>
+      <a href="5-analisis-estadistico.html#tab3-seccion5">
+        5<span>.</span> Análisis estadístico de la expresión génica
+      </a>
+      <ul>
+        <li>
+          <a href="5.1-normalizacion.html#tab3-seccion5.1">
+            5.1. Normalización de los datos de expresión
+          </a>
+          <ul>
+            <li>
+              <a href="5.1-normalizacion.html#tab3-seccion5.1.1">
+                5.1.1. Visualización de la matriz de expresión normalizada
+              </a>
+            </li>
+            <li>
+              <a href="5.1-normalizacion.html#tab3-seccion5.1.2">
+                5.1.2. Total de expresión por muestra (RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="5.1-normalizacion.html#tab3-seccion5.1.3">
+                5.1.3. Número de genes expresados por muestra (RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="5.1-normalizacion.html#tab3-seccion5.1.4">
+                5.1.4. Genes con mayor expresión total (RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="5.1-normalizacion.html#tab3-seccion5.1.5">
+                5.1.5. Distribución de expresión por muestra (boxplot log10 RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="5.1-normalizacion.html#tab3-seccion5.1.6">
+                5.1.6. Comparación entre recuentos crudos y datos normalizados
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="5.2-evaluacion-calidad-normalizacion.html#tab3-seccion5.2">
+            5.2. Evaluación del control de calidad tras la normalización
+          </a>
+        </li>
+        <li>
+          <a href="5.3-analisis-expresion.html#tab3-seccion5.3">
+            5.3. Análisis de expresión diferencial
+          </a>
+            <ul>
+')
+
+# Subapartados generados automáticamente
+for (i in seq_along(comparaciones)) {
+  cat(glue::glue('
+              <li>
+                <a href="5.3-analisis-expresion.html#tab3-seccion5.3.{i}">
+                  5.3.{i}. Comparación: {comparaciones[i]}
+                </a>
+              </li>
+\n'))
+}
+
+cat('
+          </ul>
+        </li>
+        <li>
+          <a href="5.4-analisis-funcional.html#tab3-seccion5.4">
+            5.4. Análisis funcional y enriquecimiento
+          </a>
+          <ul>
+')
+
+comparaciones <- unique(df_info$comparacion)
+for (i in seq_along(comparaciones)) {
+  comp <- comparaciones[i]
+  cat(glue::glue('
+            <li>
+              <a href="#tab3-seccion5.4.{i}">
+                5.4.{i}. Comparación: {comp}
+              </a>
+              <ul>
+  '))
+
+  subset_comp <- df_info[df_info$comparacion == comp, ]
+  categorias <- unique(subset_comp$categoria_funcional)
+
+  for (j in seq_along(categorias)) {
+    categ <- categorias[j]
+    cat(glue::glue('
+                <li>
+                  <a href="#tab3-seccion5.4.{i}.{j}">
+                    5.4.{i}.{j}. Categoría funcional: {categ}
+                  </a>
+                </li>
+    '))
+  }
+
+  cat('
+              </ul>
+            </li>
+  ')
+}
+
+cat('
+          </ul>
+        </li>
+
+    <!-- Documento 6 -->
+    <li>
+      <a href="6-conclusiones.html#tab3-seccion6">
+        6<span>.</span> Conclusiones y perspectivas
+      </a>
+    </li>
+  </ul>
+</div>
+')
+```
+```
+
+```{=html}
+```
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<footer>
+  <a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>

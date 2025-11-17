@@ -1,0 +1,1383 @@
+---
+title: "Bulk RNA-Seq Report"
+
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="../../../../1-images/icons/favicon.svg"/>
+    <link rel="icon" type="image/x-icon" href="../../../../1-images/icons/favicon.ico">
+
+params:
+  project_path: ""
+  experiment_name: ""
+  report_version: ""
+---
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{=html}
+<!-- Contenedor del chat -->
+<div id="chat-container">
+  <button id="chat-toggle"></button>
+  <div id="chat-box">
+    <div id="chat-info" class="chat-info">
+      <h1>
+        Mini Chat RAG (beta)
+      </h1>
+
+      <p>
+        ¡Hola! Soy <strong>Geni</strong>, el asistente inteligente de <strong>GenoScribe</strong>.  
+        Estoy aquí para ayudarte a explorar de forma interactiva el contenido de este informe bioinformático.
+      </p>
+
+      <p>
+        Cuando me haces una pregunta, primero intento reconocer si coincide con alguno de los patrones o expresiones que conozco.  
+        Si encuentro una coincidencia, te responderé directamente con una respuesta predefinida, diseñada para ser rápida, clara e incluso un poco ingeniosa.  
+        Si no reconozco el patrón, entonces activo mis herramientas de búsqueda: genero representaciones vectoriales (embeddings) y busco los fragmentos más relevantes entre varios documentos —incluyendo el propio informe, archivos PDF y HTML externos, y sesiones de preguntas y respuestas (QA).  
+        A partir de esa información, creo un resumen que intenta ofrecerte una respuesta coherente y útil basada en el contenido existente.
+      </p>
+
+      <p>
+        Se debe tener en cuenta que este entorno es experimental. No utilizo grandes modelos de lenguaje, por lo que algunas respuestas pueden ser aproximadas o incompletas.  
+        El objetivo principal es facilitar una visualización rápida, comprensible y reproducible de la información contenida en los documentos, permitiendo una exploración más dinámica del informe.
+      </p>
+
+      <p>
+        Actualmente, los resultados pueden variar en precisión, ya que empleo modelos ligeros y locales para asegurar que la aplicación funcione en cualquier entorno sin necesidad de servidores externos.  
+        Sin embargo, la estructura del sistema está preparada para mejorar notablemente su rendimiento en el futuro mediante la integración con modelos más avanzados o APIs externas.  
+        Para comenzar, simplemente escribe tu pregunta en el campo inferior y deja que yo me encargue del resto. ¡Prometo poner todo mi código en ello!
+      </p>
+    </div>
+    <div id="chat-log"></div>
+    <input id="chat-input" type="text" placeholder="Escribe tu pregunta..."/>
+    <button id="chat-send" title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+```
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  IMPORTACIONES
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Incluir Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  TAB 3: ANÁLISIS | 5.1. NORMALIZACIÓN DE LOS DATOS DE EXPRESIÓN -->
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+```{r}
+library(stringr)
+library(glue)
+library(fs)
+library(dplyr)
+library(htmlwidgets)
+
+# Rutas clave
+ruta_qmd <- getwd()
+ruta_bulk_rna_seq_pipeline <- file.path("..", "..", "..", "..", "..", "..")
+ruta_bulk_rna_seq_pipeline_absoluta <- normalizePath(ruta_bulk_rna_seq_pipeline)
+nombre_proyecto <- basename(params$project_path)
+nombre_experimento <- basename(params$experiment_name)
+
+
+# Rutas de resultados Nextflow
+ruta_nextflow_results <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results")
+ruta_proyecto_relativa <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "2-nextflow-results", "1-project-data", nombre_proyecto)
+
+
+# Rutas para la matriz normalizada
+experimento_RPKM <- paste0(nombre_experimento, "_RPKM.xls")
+
+ruta_experimento_RPKM_xls <- file.path(params$project_path, "Resultados", nombre_experimento, experimento_RPKM)
+ruta_experimento_RPKM_xls_relativa <- file.path(ruta_proyecto_relativa, "Resultados", nombre_experimento, experimento_RPKM)
+
+ruta_archives_tmp_analisis <- file.path(ruta_bulk_rna_seq_pipeline, "resources", "1-essential", "2-archives", "2-tmp", "tab3-analisis")
+ruta_experimento_RPKM_txt <- file.path(ruta_archives_tmp_analisis, paste0(nombre_experimento, "_RPKM.txt"))
+
+
+# Rutas para guardar los dataframe creados
+ruta_total_lecturas_muestra_normalized_txt <- file.path(ruta_archives_tmp_analisis, "total_lecturas_muestra_normalized.txt")
+ruta_genes_expresados_muestra_normalized_txt <- file.path(ruta_archives_tmp_analisis, "genes_expresados_muestra_normalized.txt")
+ruta_genes_mayor_expresion_total_normalized_txt <- file.path(ruta_archives_tmp_analisis, "genes_mayor_expresion_total_normalized.txt")
+
+
+# Verificar si el archivo existe
+if (file.exists(ruta_experimento_RPKM_xls)) {
+  # Leer matriz
+  matriz <- read.table(ruta_experimento_RPKM_xls, header = TRUE, fill = TRUE, stringsAsFactors = FALSE)
+  rownames(matriz) <- matriz[[1]]
+  matriz <- matriz[, -1]
+
+  # Crear directorio de salida si no existe
+  if (!dir.exists(ruta_archives_tmp_analisis)) {
+    dir.create(ruta_archives_tmp_analisis, recursive = TRUE)
+  }
+
+  # Ruta final para el TXT
+  write.table(matriz, file = ruta_experimento_RPKM_txt, sep = "\t", quote = TRUE, row.names = TRUE)
+
+} else {
+  stop(paste("No se encuentra el archivo:", ruta_experimento_RPKM_xls))
+}
+```
+
+
+<div class="informe-titulo-tab">
+  <h1>Pestaña</h1>
+  <h2>Análisis bioinformático completo</h2>
+</div>
+
+<div class="informe-titulo-seccion">
+  <h1>Sección 5</h1>
+  <h2>Análisis estadístico de la expresión génica</h2>
+</div>
+
+<div class="informe-titulo-subseccion-unique">
+  <h1>Subsección 5.1</h1>
+  <h2>Normalización de los datos de expresión</h2>
+</div>
+
+<div class="flecha-abajo">
+  ▼
+</div>
+
+
+<div class="informe-resumen">
+  <h2>Resumen</h2>
+
+  <p>
+    En esta sección se lleva a cabo la <strong>normalización de los datos de expresión génica</strong>, un paso esencial para garantizar la <em>comparabilidad entre muestras</em> y minimizar sesgos técnicos derivados del <em>tamaño de las bibliotecas de secuenciación</em> o de la <em>longitud de los genes</em>. Se transforma la matriz de recuentos crudos en medidas normalizadas, como <strong>RPKM (Reads Per Kilobase per Million)</strong>, que permiten interpretar los niveles de expresión de forma más robusta y comparable entre genes y muestras.
+  </p>
+
+  <p>
+    A lo largo del análisis, se <strong>visualiza la matriz normalizada</strong> y se evalúan métricas clave como el <em>total de expresión por muestra</em> o el <em>número de genes expresados</em>, permitiendo detectar posibles <strong>anomalías o desviaciones</strong> tras la transformación. También se identifican los genes con mayor expresión global y se estudia la <em>distribución de expresión</em> a través de diagramas de caja, comparándola con los datos originales para valorar el efecto de la normalización.
+  </p>
+
+  <p>
+    Esta fase prepara el terreno para los análisis posteriores, donde se requerirá que los datos estén correctamente ajustados para aplicar <strong>modelos estadísticos fiables</strong>. La normalización, por tanto, constituye un paso fundamental previo a la <em>evaluación de la calidad post-normalización</em> y a los análisis de <strong>expresión diferencial</strong> y <strong>enriquecimiento funcional</strong>, claves para extraer conocimiento biológico relevante a partir del perfil transcriptómico estudiado.
+  </p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo-toc">
+  Tabla de contenidos de esta subsección
+</div>
+
+<div class="toc">
+  <ul>
+    <li>
+      <a href="5-Analisis-estadistico.html#tab3-seccion5">
+        5<span>.</span> Análisis estadístico de la expresión génica
+      </a>
+      <ul>
+        <li>
+          <a href="#tab3-seccion5.1">
+            5.1. Normalización de los datos de expresión
+          </a>
+          <ul>
+            <li>
+              <a href="#tab3-seccion5.1.1">
+                5.1.1. Visualización de la matriz de expresión normalizada
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion5.1.2">
+                5.1.2. Total de lecturas por muestra (RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion5.1.3">
+                5.1.3. Número de genes expresados por muestra (RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion5.1.4">
+                5.1.4. Genes con mayor expresión total (RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion5.1.5">
+                5.1.5. Distribución de expresión por muestra (boxplot log10 RPKM)
+              </a>
+            </li>
+            <li>
+              <a href="#tab3-seccion5.1.6">
+                5.1.6. Comparación entre recuentos crudos y datos normalizados
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- REDACCIÓN -->
+<!-- #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+<div style="height: 20px; background-color: transparent;"></div>
+
+<div class="titulo2" id="tab3-seccion5.1">
+  5.1. Normalización de los datos de expresión
+</div>
+
+<p>
+  La cuantificación inicial de la expresión génica genera una matriz de recuentos crudos, en la que cada valor representa el número de lecturas que se alinean a un gen específico en una muestra determinada. No obstante, estos valores pueden estar influenciados por factores técnicos no biológicos, como la profundidad de secuenciación o la longitud de los genes, lo que dificulta la comparación directa entre muestras o genes.
+</p>
+
+<p>
+  Para mitigar estas fuentes de sesgo y facilitar comparaciones significativas, se ha aplicado un proceso de normalización. En este análisis, se ha empleado el método <strong>RPKM</strong> (Reads Per Kilobase of transcript per Million mapped reads), el cual ajusta los recuentos teniendo en cuenta tanto la longitud del gen como el número total de lecturas mapeadas por muestra.
+</p>
+
+<p>
+  El resultado de esta transformación es una matriz de expresión normalizada que permite comparar niveles de expresión relativos de manera más robusta entre genes y entre condiciones experimentales.
+</p>
+
+```{r, echo=FALSE, results="asis"}
+cat(glue::glue('
+<p>
+  La matriz RPKM utilizada en este proyecto viene dada por el nombre <code>{basename(ruta_experimento_RPKM_xls)}</code> y en el momento de la generación de este informe se encuentra en el siguiente directorio:
+</p>
+
+<code>{ruta_experimento_RPKM_xls}</code>
+'), sep = "\n")
+```
+
+<p> 
+  A continuación, se muestra esta matriz junto con un conjunto de visualizaciones que permiten explorar las características globales de los datos normalizados y compararlas con los patrones observados en los recuentos crudos presentados en la sección anterior.
+</p> 
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion5.1.1">
+  5.1.1. Visualización de la matriz de expresión normalizada
+</div>
+
+```{r, echo=FALSE, results="asis"}
+cat(glue::glue('
+<p>
+  A continuación, se presenta una vista interactiva de la matriz de expresión génica normalizada, obtenida a partir del archivo <code>{basename(ruta_experimento_RPKM_xls)}</code>. Esta matriz contiene valores transformados según el método RPKM, lo que permite una comparación más equitativa de los niveles de expresión génica entre diferentes muestras y genes, corrigiendo posibles sesgos técnicos asociados al tamaño de los genes o a la profundidad de secuenciación.
+</p>
+'), sep = "\n")
+```
+
+<p>
+  La tabla interactiva mostrada a continuación permite explorar en detalle los valores de expresión normalizada. Se puede <strong>buscar un gen específico</strong> utilizando el cuadro de búsqueda, así como <strong>ordenar las columnas</strong> para identificar rápidamente genes con altos o bajos niveles de expresión en cada muestra. Adicionalmente, mediante el botón que se proporciona justo debajo, se puede descargar dicho archivo.
+</p>
+
+```{r}
+# Leer el archivo y mostrar tabla interactiva
+if (file.exists(ruta_experimento_RPKM_xls)) {
+  # Leer la matriz de RPKM
+  matriz_RPKM <- read.table(ruta_experimento_RPKM_xls, header = TRUE, fill = TRUE, stringsAsFactors = FALSE)
+  rownames(matriz_RPKM) <- matriz_RPKM[[1]]
+  matriz_RPKM <- matriz_RPKM[, -1]
+  
+  # Tabla interactiva de metadatos
+  library(DT)
+  htmltools::div(
+    class = "scroll-y-max-500",
+    DT::datatable(
+      matriz_RPKM,
+      options = list(
+        scrollX = TRUE,
+        paging = FALSE,
+        lengthChange = FALSE,
+        language = list(
+          url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+        )
+      ),
+      class = 'stripe hover compact'
+    )
+  )
+  
+} else {
+  cat(glue::glue('
+    <div class="alert-warning alert-box">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <b>Advertencia</b><br>
+      Archivo "{basename(ruta_experimento_RPKM_xls)}" no encontrado en la ruta especificada:<br>
+      <code>{ruta_experimento_RPKM_xls}</code>.<br>
+      Asegúrese de que dicho archivo se encuentra correctamente definido en este directorio.
+    </div>
+  '), sep = "\n")
+}
+```
+
+```{r, echo=FALSE, results="asis"}
+if (file.exists(ruta_experimento_RPKM_xls_relativa)) {
+  cat(glue::glue('
+  <p style="text-align:center; margin-top: 5px;">
+    <a href="{ruta_experimento_RPKM_xls_relativa}" 
+      download="{basename(ruta_experimento_RPKM_xls_relativa)}" 
+      class="boton-file-download">
+      <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_experimento_RPKM_xls_relativa)}"
+    </a>
+  </p>
+  '), sep = "\n")
+}
+```
+
+<p>
+  Esta visualización resulta especialmente útil para detectar posibles patrones globales de expresión, validar muestras atípicas o verificar la correcta distribución de los valores normalizados antes de proceder al análisis estadístico de expresión diferencial.
+</p>
+
+<p>
+  Si desea consultar el archivo completo, puede hacerlo directamente desde el visor incrustado justo debajo o abrirlo en una nueva pestaña mediante el correspondiente botón incrustado.
+</p>
+
+```{r, results='asis'}
+if (file.exists(ruta_experimento_RPKM_txt)) {
+  cat(glue::glue('
+  <div class="iframe-container">
+    <iframe src="{ruta_experimento_RPKM_txt}" frameborder="0" style="height: 500px;"></iframe>
+  </div>
+
+  <p style="text-align:center;">
+    <a href="{ruta_experimento_RPKM_txt}"
+      target="_blank" 
+      class="boton-iframe">
+      <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+    </a>
+  </p>
+  '), sep = "\n")
+
+} else {
+  cat(glue::glue('
+    <div class="alert-warning alert-box">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <b>Advertencia</b><br>
+      Archivo "{basename(ruta_experimento_RPKM_xls)}" no encontrado en la ruta especificada:<br>
+      <code>{ruta_experimento_RPKM_xls}</code>.<br>
+      Asegúrese de que dicho archivo se encuentra correctamente definido en este directorio.
+    </div>
+  '), sep = "\n")
+}
+```
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion5.1.2">
+  5.1.2. Total de lecturas por muestra (RPKM)
+</div>
+
+<p>
+  Para continuar con la exploración de los datos normalizados, se calcula el total de expresión por muestra sumando los valores de RPKM correspondientes a todos los genes. Este valor refleja la cantidad global de expresión génica detectada en cada muestra tras la corrección por longitud génica y profundidad de secuenciación.
+</p>
+
+<p>
+  A continuación, se muestra dicha tabla resultante, con los totales de expresión normalizada por muestra y la cuál se puede explorar de forma interactiva.
+</p>
+
+```{r}
+library(DT)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(stringr)
+library(scales)
+library(tidyverse)
+library(tidyr)
+library(tibble)
+
+# Calcular número total de lecturas asignadas por muestra
+total_recuentos_por_muestra <- colSums(matriz_RPKM)
+
+total_recuentos_por_muestra_df <- data.frame(
+  Muestra = names(total_recuentos_por_muestra),
+  TotalRecuentos = as.integer(total_recuentos_por_muestra)
+)
+
+# Convertir a data frame para ggplot2
+df_total <- data.frame(
+  muestra = names(total_recuentos_por_muestra),
+  total_lecturas = as.integer(total_recuentos_por_muestra)
+)
+
+# Asegurarnos que 'targets' está cargado previamente
+targets_experimento <- paste0("targets_", nombre_experimento, ".txt")
+ruta_targets_experimento <- file.path(params$project_path, "Resultados", targets_experimento)
+targets <- read.table(ruta_targets_experimento, header = TRUE, fill = TRUE, stringsAsFactors = FALSE)
+
+# Limpiar y unir condición
+df_total$muestra <- str_remove(df_total$muestra, "_nat$")
+df_total <- df_total %>%
+  left_join(targets %>% select(Filename, Type), by = c("muestra" = "Filename")) %>%
+  rename(condicion = Type) %>%
+  select(muestra, condicion, total_lecturas) %>%
+  arrange(desc(total_lecturas))
+
+# Guardar dataframe generado en formato .txt
+write_delim(df_total, ruta_total_lecturas_muestra_normalized_txt, delim = "\t")
+
+# Mostrar tabla interactiva con DT
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    df_total,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_total_lecturas_muestra_normalized_txt}" 
+    download="{basename(ruta_total_lecturas_muestra_normalized_txt)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_total_lecturas_muestra_normalized_txt)}"
+  </a>
+</p>
+
+<p>
+  Estos resultados que acabamos de visualizar han sido guardados en un archivo denominado <code>{basename(ruta_total_lecturas_muestra_normalized_txt)}</code>, el cuál se puede descargar a través del botón proporcionado anteriormente. Adicionalmente, podemos visualizar este archivo mediante el siguiente <code>iframe</code> o explorarlo de forma más detallada en una nueva pestaña.
+</p>
+
+<div class="iframe-container">
+  <iframe src="{ruta_total_lecturas_muestra_normalized_txt}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_total_lecturas_muestra_normalized_txt}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Finalmente, se proporciona el siguiente gráfico de barras interactivo, que permite comparar la profundidad de secuenciación entre condiciones y réplicas y con el cuál se puede observar estos resultados de una forma más dinámica y visual.
+</p>
+
+<div class="plot-center">
+
+```{r}
+# Gráfico de número total de lecturas por muestra con plotly
+p <- plot_ly(
+  data = df_total,
+  x = ~muestra,
+  y = ~total_lecturas,
+  type = "bar",
+  color = ~condicion,
+  colors = "Set2",
+  text = ~comma(total_lecturas),
+  textposition = "outside",
+  hoverinfo = "text",
+  hovertext = ~paste0("Muestra: ", muestra, "<br>Lecturas: ", comma(total_lecturas))
+) %>%
+  layout(
+    title = "Total de lecturas por muestra",
+    xaxis = list(title = "Muestra", tickangle = -45, tickfont = list(size = 10)),
+    yaxis = list(
+      title = "Número de lecturas",
+      range = c(0, max(df_total$total_lecturas) * 1.15)
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      y = -0.5,
+      xanchor = "center"
+    ),
+    margin = list(t = 100, b = 170),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_total_lecturas_muestra_normalized_html <- file.path(ruta_archives_tmp_analisis, "graph_total_lecturas_muestra_normalized.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_total_lecturas_muestra_normalized_html,
+  selfcontained = TRUE,
+  title = "Total de lecturas por muestra (RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_total_lecturas_muestra_normalized_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion5.1.3">
+  5.1.3. Número de genes expresados por muestra (RPKM)
+</div>
+
+<p>
+  Una vez evaluado el total de expresión global por muestra, el siguiente paso consiste en determinar <strong>cuántos genes se consideran expresados</strong> en cada una de ellas tras la normalización mediante RPKM. Para este análisis, se considera que un gen está expresado en una muestra si su valor de RPKM es mayor que cero.
+</p>
+
+<p>
+  Esta métrica resulta útil para detectar muestras con baja complejidad transcriptómica o posibles fallos técnicos, ya que un número reducido de genes expresados podría ser indicativo de una extracción deficiente de RNA, contaminación o errores durante la secuenciación o cuantificación.
+</p>
+
+<p>
+  A continuación, se muestra dicha tabla resultante, con el número de genes expresados por muestra según el criterio anterior, la cuál se puede explorar de forma interactiva.
+</p>
+
+```{r}
+# Calcular número de genes expresados por muestra (genes con recuentos > 0)
+genes_expresados_por_muestra <- colSums(matriz_RPKM > 0)
+
+genes_expresados_por_muestra_df <- data.frame(
+  Muestra = names(genes_expresados_por_muestra),
+  GenesExpresados = as.integer(genes_expresados_por_muestra)
+)
+
+# Crear data frame
+df_genes_exp <- data.frame(
+  muestra = names(genes_expresados_por_muestra),
+  genes_expresados = as.integer(genes_expresados_por_muestra)
+)
+
+# Añadir la columna 'condicion' uniendo por el nombre de muestra
+df_genes_exp$muestra <- str_remove(df_genes_exp$muestra, "_nat$")
+df_genes_exp <- df_genes_exp %>%
+  left_join(targets %>% select(Filename, Type), by = c("muestra" = "Filename")) %>%
+  rename(condicion = Type) %>%
+  select(muestra, condicion, genes_expresados) %>%
+  arrange(desc(genes_expresados))
+
+# Guardar dataframe generado en formato .txt
+write_delim(df_genes_exp, ruta_genes_expresados_muestra_normalized_txt, delim = "\t")
+
+# Crear la tabla interactiva
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    df_genes_exp,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_genes_expresados_muestra_normalized_txt}" 
+    download="{basename(ruta_genes_expresados_muestra_normalized_txt)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_genes_expresados_muestra_normalized_txt)}"
+  </a>
+</p>
+
+<p>
+  Estos resultados que acabamos de visualizar han sido guardados en un archivo denominado <code>{basename(ruta_genes_expresados_muestra_normalized_txt)}</code>, el cuál se puede descargar a través del botón proporcionado anteriormente. Adicionalmente, podemos visualizar este archivo mediante el siguiente <code>iframe</code> o explorarlo de forma más detallada en una nueva pestaña.
+</p>
+
+<div class="iframe-container">
+  <iframe src="{ruta_genes_expresados_muestra_normalized_txt}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_genes_expresados_muestra_normalized_txt}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Finalmente, se proporciona el siguiente gráfico de barras interactivo, que facilita la comparación entre condiciones experimentales y con el cuál se puede observar estos resultados de una forma más dinámica y visual.
+</p>
+
+<div class="plot-center">
+
+```{r}
+# Gráfico: genes expresados por muestra (>0) con plotly
+p <- plot_ly(
+  data = df_genes_exp,
+  x = ~muestra,
+  y = ~genes_expresados,
+  type = "bar",
+  color = ~condicion,
+  colors = "Set2",  # mismo estilo que ggplot (Set1)
+  text = ~comma(genes_expresados),
+  textposition = "outside",
+  hoverinfo = "text",
+  hovertext = ~paste0("Muestra: ", muestra, "<br>Genes expresados: ", comma(genes_expresados))
+) %>%
+  layout(
+    title = "Número de genes expresados por muestra",
+    xaxis = list(
+      title = "Muestra",
+      tickangle = -45,
+      tickfont = list(size = 10)
+    ),
+    yaxis = list(
+      title = "Genes con recuentos > 0",
+      range = c(0, max(df_genes_exp$genes_expresados) * 1.15),
+      separatethousands = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      y = -0.52,
+      xanchor = "center"
+    ),
+    margin = list(t = 100, b = 170),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_genes_expresados_muestra_normalized_html <- file.path(ruta_archives_tmp_analisis, "graph_genes_expresados_muestra_normalized.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_genes_expresados_muestra_normalized_html,
+  selfcontained = TRUE,
+  title = "Número de genes expresados por muestra (RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_genes_expresados_muestra_normalized_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion5.1.4">
+  5.1.4. Genes con mayor expresión total (RPKM)
+</div>
+
+<p>
+  Para identificar los <strong>genes con mayor nivel de expresión</strong> dentro del conjunto de datos normalizados, se calcula la suma total de valores RPKM por gen a lo largo de todas las muestras. Esta métrica permite detectar aquellos genes cuya actividad transcripcional es más elevada de forma global tras corregir por longitud génica y profundidad de secuenciación.
+</p>
+
+<p>
+  Este análisis resulta útil para destacar genes altamente expresados que podrían desempeñar funciones clave en el contexto experimental, o bien reflejar la expresión constitutiva de genes de mantenimiento (housekeeping).
+</p>
+
+<p>
+  A continuación, se muestra dicha tabla resultante, con los genes ordenados según su mayor expresión acumulada, de forma descendente según su número total de lecturas.
+</p>
+
+```{r}
+# Obtener los genes con mayor nivel de expresión total (suma por fila)
+top_genes<- rowSums(matriz_RPKM) |>
+  sort(decreasing = TRUE)
+
+top_genes_df <- data.frame(
+  Gen = names(top_genes),
+  TotalRecuentos = as.integer(top_genes)
+)
+
+top_genes_20 <- rowSums(matriz_RPKM) |>
+  sort(decreasing = TRUE) |>
+  head(20)
+
+top_genes_20_df <- data.frame(
+  Gen = names(top_genes_20),
+  TotalRecuentos = as.integer(top_genes_20)
+)
+
+# Guardar dataframe generado en formato .txt
+write_delim(top_genes_df, ruta_genes_mayor_expresion_total_normalized_txt, delim = "\t")
+
+# Crear la tabla interactiva
+htmltools::div(
+  class = "scroll-y-max-500",
+  DT::datatable(
+    top_genes_df,
+    options = list(
+      scrollX = TRUE,
+      paging = FALSE,
+      lengthChange = FALSE,
+      language = list(
+        url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+      )
+    ),
+    class = 'stripe hover compact',
+  )
+)
+```
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center; margin-top: 5px;">
+  <a href="{ruta_genes_mayor_expresion_total_normalized_txt}" 
+    download="{basename(ruta_genes_mayor_expresion_total_normalized_txt)}" 
+    class="boton-file-download">
+    <i class="fa-solid fa-file-arrow-down"></i> Descargar archivo "{basename(ruta_genes_mayor_expresion_total_normalized_txt)}"
+  </a>
+</p>
+
+<p>
+  Estos resultados que acabamos de visualizar han sido guardados en un archivo denominado <code>{basename(ruta_genes_mayor_expresion_total_normalized_txt)}</code>, el cuál se puede descargar a través del botón proporcionado anteriormente. Adicionalmente, podemos visualizar este archivo mediante el siguiente <code>iframe</code> o explorarlo de forma más detallada en una nueva pestaña.
+</p>
+
+<div class="iframe-container">
+  <iframe src="{ruta_genes_mayor_expresion_total_normalized_txt}" frameborder="0" style="height: 500px;"></iframe>
+</div>
+
+<p style="text-align:center;">
+  <a href="{ruta_genes_mayor_expresion_total_normalized_txt}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-file-lines"></i> Abrir archivo en una pestaña nueva
+  </a>
+</p>
+'), sep = "\n")
+```
+
+<p>
+  Finalmente, se proporciona el siguiente gráfico de barras interactivo, donde se pueden observar los 20 genes con mayor expresión, permitiendo valorar su contribución relativa dentro del conjunto de datos.
+</p>
+
+<div class="plot-center">
+
+```{r}
+# Ordenar los genes de forma descendente para el gráfico
+top_genes_20_df$Gen <- factor(top_genes_20_df$Gen, levels = rev(top_genes_20_df$Gen))
+
+# Gráfico: top 20 genes más expresados con plotly (horizontal)
+p <- plot_ly(
+  data = top_genes_20_df,
+  x = ~TotalRecuentos,
+  y = ~Gen,
+  type = "bar",
+  orientation = "h",
+  marker = list(
+    color = "#098",
+    line = list(color = "black", width = 1)
+  ),
+  text = ~comma(TotalRecuentos),
+  textposition = "outside",
+  hoverinfo = "text",
+  hovertext = ~paste0("Gen: ", Gen, "<br>Recuentos: ", comma(TotalRecuentos))
+) %>%
+  layout(
+    title = "Top 20 genes más expresados",
+    xaxis = list(
+      title = "Recuentos totales",
+      range = c(0, max(top_genes_20_df$TotalRecuentos) * 1.2),
+      separatethousands = TRUE
+    ),
+    yaxis = list(
+      title = "Gen",
+      automargin = TRUE,
+      tickfont = list(size = 10)
+    ),
+    margin = list(l = 100, t = 80, r = 40),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_genes_mayor_expresion_total_normalized_html <- file.path(ruta_archives_tmp_analisis, "graph_genes_mayor_expresion_total_normalized.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_genes_mayor_expresion_total_normalized_html,
+  selfcontained = TRUE,
+  title = "Top 20 genes más expresados (RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_genes_mayor_expresion_total_normalized_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion5.1.5">
+  5.1.5. Distribución de expresión por muestra (boxplot log10 RPKM)
+</div>
+
+<p>
+  Para evaluar la variabilidad de los niveles de expresión normalizados entre muestras, se genera un gráfico de cajas (<em>boxplot</em>) basado en la transformación logarítmica (log<sub>10</sub>) de los valores RPKM. Esta transformación permite representar la distribución de los datos de manera más adecuada, suavizando el efecto de valores extremadamente altos y resaltando diferencias sutiles entre condiciones.
+</p>
+
+<p>
+  Los valores RPKM iguales a cero se excluyen previamente para evitar problemas con la escala logarítmica. Esta visualización resulta especialmente útil para verificar la homogeneidad entre réplicas, detectar valores atípicos y evaluar si las muestras presentan perfiles de expresión comparables tras la normalización.
+</p>
+
+<p>
+  A continuación, se presenta el boxplot interactivo correspondiente a todas las muestras del experimento.
+</p>
+
+```{r}
+# Convertir a formato largo
+matriz_RPKM_long <- matriz_RPKM |>
+  rownames_to_column("gene") |>
+  pivot_longer(-gene, names_to = "muestra", values_to = "recuento")
+
+# Filtrar recuentos mayores que cero antes de graficar
+matriz_RPKM_long_filtrado <- matriz_RPKM_long |>
+  filter(recuento > 0)
+
+
+# Hacer el left join con targets para añadir la columna 'Type' como 'condicion'
+matriz_RPKM_long_filtrado <- matriz_RPKM_long_filtrado %>%
+  mutate(muestra_clean = str_remove(muestra, "_nat$")) %>%
+  select(-muestra) %>%
+  rename(muestra = muestra_clean) %>%
+  left_join(targets %>% select(Filename, Type), by = c("muestra" = "Filename")) %>%
+  rename(condicion = Type)
+```
+
+<div class="plot-center">
+
+```{r}
+# Gráfico: distribución logarítmica de recuentos por muestra (boxplot)
+p <- plot_ly(
+  data = matriz_RPKM_long_filtrado,
+  x = ~muestra,
+  y = ~recuento,
+  color = ~condicion,
+  colors = "Set2",
+  type = "box",
+  boxpoints = "outliers",
+  marker = list(size = 3, opacity = 0.5, line = list(width = 0)),
+  line = list(color = "black"),
+  opacity = 0.8
+) %>%
+  layout(
+    title = list(
+      text = "Distribución logarítmica de recuentos por muestra<br><sub>Cada boxplot representa los niveles de expresión génica (log10) por muestra</sub>",
+      y = 0.95
+    ),
+    xaxis = list(
+      title = "Muestra",
+      tickangle = -45,
+      tickfont = list(size = 10)
+    ),
+    yaxis = list(
+      title = "Recuento (log10)",
+      type = "log",
+      separatethousands = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      y = -0.52,
+      xanchor = "center"
+    ),
+    margin = list(t = 100, b = 170),
+    autosize = TRUE
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_distribucion_expresion_muestra_normalized_html <- file.path(ruta_archives_tmp_analisis, "graph_distribucion_expresion_muestra_normalized.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_distribucion_expresion_muestra_normalized_html,
+  selfcontained = TRUE,
+  title = "Distribución de expresión por muestra (RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_distribucion_expresion_muestra_normalized_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+
+
+<div style="height: 15px; background-color: transparent;"></div>
+
+<div class="titulo3" id="tab3-seccion5.1.6">
+  5.1.6. Comparación entre recuentos crudos y datos normalizados
+</div>
+
+<p>
+  En el análisis de datos de expresión génica, la normalización es un paso crítico que busca corregir sesgos técnicos derivados de variaciones en la profundidad de secuenciación, tamaño de los genes y otros factores experimentales. 
+  Aunque la normalización tiene como objetivo hacer que los datos sean comparables entre muestras, es fundamental evaluar cómo este proceso afecta a la distribución y la relación entre los valores originales (recuentos crudos) y los ajustados (normalizados).
+</p>
+
+<p>
+  Esta comparación nos permite verificar dos aspectos importantes: primero, que la normalización efectivamente reduzca las diferencias técnicas no biológicas que podrían sesgar los resultados; y segundo, que preserve la estructura biológica y las diferencias genuinas en la expresión génica.
+</p>
+
+<p>
+  Es importante destacar que la matriz normalizada puede contener un número menor o igual de genes que la matriz inicial de conteos, debido a que durante el proceso de normalización o preprocesamiento se suelen filtrar genes con baja expresión o sin anotación adecuada para asegurar la calidad del análisis.
+</p>
+
+<p>
+  Para explorar y evaluar esta comparación, se presentan a continuación tres tipos de visualizaciones complementarias que nos permiten entender mejor cómo varían los datos antes y después de la normalización:
+</p>
+
+<ul>
+  <li><strong>Boxplots comparativos</strong> <strong>&rArr;</strong> muestran la distribución logarítmica (log<sub>10</sub>) de los valores crudos y normalizados, agrupados por muestra, para visualizar la homogeneización y reducción de la dispersión tras la normalización.</li>
+  <li><strong>Scatterplots por muestra</strong> <strong>&rArr;</strong> comparan, en escala logarítmica, los valores crudos frente a los normalizados por gen en muestras seleccionadas, revelando la relación directa y la consistencia entre ambas mediciones.</li>
+  <li><strong>Gráfico de barras de correlación</strong> <strong>&rArr;</strong> presenta la correlación de Pearson entre los recuentos crudos y los valores normalizados para cada muestra, proporcionando una métrica cuantitativa de concordancia entre ambos conjuntos de datos.</li>
+</ul>
+
+<p>
+  A continuación se detallan cada una de estas visualizaciones, explicando su interpretación y utilidad para el análisis de expresión génica.
+</p>
+
+
+
+
+
+
+<div style="height: 13px; background-color: transparent;"></div>
+
+<div class="titulo4">
+  ➤ Visualización 1: Distribución de expresión por muestra
+</div>
+
+<p>
+  El siguiente gráfico de cajas (boxplot) muestra la <strong>distribución de los recuentos de expresión para cada muestra</strong>, aplicando una <strong>transformación logarítmica (log<sub>10</sub>)</strong> para mejorar la visualización y homogeneizar la escala.
+  Se presentan lado a lado los <strong>datos crudos y normalizados</strong>, lo que permite comparar la variabilidad y dispersión entre ambos conjuntos.
+  En general, se observa que la normalización reduce la variabilidad extrema y alinea mejor las distribuciones entre muestras, facilitando comparaciones posteriores y minimizando el sesgo técnico derivado de diferencias en profundidad de secuenciación o longitud génica.
+</p>
+
+<div class="plot-center">
+
+```{r, results='asis'}
+# Asegurarse de que las matrices de recuentos crudos y RPKM están disponibles
+his_ReadCount_ruta <- file.path(params$project_path, "Analisis", nombre_experimento, "Readcount_results", "his-ReadCount.tab")
+counts_raw <- read.delim(his_ReadCount_ruta, row.names = 1)
+
+ruta_experimento_RPKM_xls <- file.path(params$project_path, "Resultados", nombre_experimento, experimento_RPKM)
+counts_rpkm <- read.table(ruta_experimento_RPKM_xls, header = TRUE, fill = TRUE, stringsAsFactors = FALSE)
+rownames(counts_rpkm) <- counts_rpkm[[1]]
+counts_rpkm <- counts_rpkm[, -1]
+
+
+# Asegurarse de que las columnas de recuentos crudos y RPKM coinciden
+colnames(counts_raw) <- gsub("_nat$", "", colnames(counts_raw))
+  
+  
+# Prepara data en formato largo y limpia el nombre de muestra
+df_raw <- counts_raw %>%
+  as.data.frame() %>%
+  rownames_to_column("gene") %>%
+  pivot_longer(-gene, names_to = "sample", values_to = "value") %>%
+  mutate(type = "Crudo")
+
+df_rpkm <- counts_rpkm %>%
+  as.data.frame() %>%
+  rownames_to_column("gene") %>%
+  pivot_longer(-gene, names_to = "sample", values_to = "value") %>%
+  mutate(type = "RPKM")
+
+
+# Combina y filtra ceros para log10
+df_combined <- bind_rows(df_raw, df_rpkm) %>%
+  filter(value > 0) %>%
+  mutate(log_value = log10(value))
+
+
+# Convertir el factor para asegurar orden y color consistente
+df_combined <- df_combined %>%
+  mutate(
+    sample = factor(sample, levels = unique(sample)),
+    type = factor(type)
+  )
+
+p <- plot_ly(df_combined, x = ~sample, y = ~log_value, color = ~type, colors = "Set2", type = "box") %>%
+  layout(
+    title = "Distribución log10(Expresión) por muestra y tipo de dato",
+    xaxis = list(title = "Muestra", tickangle = -45),
+    yaxis = list(title = "log10(Expresión)"),
+    legend = list(title = list(text = "<b>Tipo de dato</b>")),
+    boxmode = "group"
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_distribucion_expresion_muestra_raw_vs_norm_html <- file.path(ruta_archives_tmp_analisis, "graph_distribucion_expresion_muestra_raw_vs_norm.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_distribucion_expresion_muestra_raw_vs_norm_html,
+  selfcontained = TRUE,
+  title = "Distribución de expresión por muestra (Raw vs RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_distribucion_expresion_muestra_raw_vs_norm_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+<div style="height: 13px; background-color: transparent;"></div>
+
+<div class="titulo4">
+  ➤ Visualización 2: Relación directa entre recuentos crudos y normalizados
+</div>
+
+<p>
+  El siguiente gráfico <strong>(scatterplot por muestra)</strong> sirve para ejemplificar la <strong>relación entre los dos tipos de datos</strong>, se selecciona una muestra representativa y se grafica la expresión génica por cada gen en escala logarítmica, comparando valores crudos frente a valores normalizados.
+  La <strong>línea diagonal punteada indica la igualdad entre ambos valores</strong>; los <strong>puntos por debajo muestran genes que han sido ajustados a niveles inferiores tras la normalización</strong>.
+  Este gráfico ayuda a visualizar cómo la normalización corrige sistemáticamente los recuentos, especialmente aquellos genes con valores extremos, sin alterar la tendencia general entre genes altamente y poco expresados.
+</p>
+
+<div class="plot-center">
+
+```{r, results='asis'}
+# Obtener genes comunes entre ambas matrices
+genes_comunes <- intersect(rownames(counts_raw), rownames(counts_rpkm))
+
+# Subconjuntos alineados por gene
+raw_mat <- counts_raw[genes_comunes, ]
+rpkm_mat <- counts_rpkm[genes_comunes, ]
+
+# Seleccionar una muestra
+sample_to_plot <- colnames(raw_mat)[1]
+
+# Crear el data frame para el scatter plot incluyendo el nombre del gen
+df_scatter <- tibble(
+  gene = genes_comunes,
+  log_raw = log10(raw_mat[[sample_to_plot]] + 1),
+  log_rpkm = log10(rpkm_mat[[sample_to_plot]] + 1)
+)
+
+
+# Rango para la línea de identidad (y = x)
+rango <- range(c(df_scatter$log_raw, df_scatter$log_rpkm))
+
+# Visualización interactiva con plotly
+p <- plot_ly() %>%
+  add_trace(
+    data = df_scatter,
+    x = ~log_raw,
+    y = ~log_rpkm,
+    type = 'scatter',
+    mode = 'markers',
+    text = ~paste("Gen:", gene),
+    marker = list(
+      size = 5,
+      opacity = 0.8,
+      color = 'rgba(100, 149, 237, 0.6)'
+    ),
+    name = "Genes"
+  ) %>%
+  add_lines(
+    x = rango,
+    y = rango,
+    line = list(color = "red", dash = "dash"),
+    showlegend = FALSE,
+    inherit = FALSE  # Muy importante para evitar heredar el `df_scatter`
+  ) %>%
+  layout(
+    title = list(
+      text = glue("Recuentos crudos vs RPKM ({sample_to_plot})"),
+      x = 0.5
+    ),
+    xaxis = list(title = "log10(Conteo crudo + 1)"),
+    yaxis = list(title = "log10(RPKM + 1)"),
+    plot_bgcolor = "#ffffff",
+    paper_bgcolor = "#ffffff"
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_relacion_directa_raw_vs_norm_html <- file.path(ruta_archives_tmp_analisis, "graph_relacion_directa_raw_vs_norm.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_relacion_directa_raw_vs_norm_html,
+  selfcontained = TRUE,
+  title = "Relación directa (Raw vs RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_relacion_directa_raw_vs_norm_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+
+
+
+
+<div style="height: 13px; background-color: transparent;"></div>
+
+<div class="titulo4">
+  ➤ Visualización 3: Correlación de Pearson entre recuentos crudos y normalizados por muestra 
+</div>
+
+<p>
+  Por último, el siguiente gráfico de barras, sirve para cuantificar la <strong>relación entre los dos conjuntos de datos</strong>, se calcula el <strong>coeficiente de correlación de Pearson para cada muestra</strong>, reflejando la conservación relativa de los patrones de expresión génica. <strong>Altos valores de correlación indican que la normalización mantiene la estructura biológica entre genes dentro de cada muestra</strong>, a la vez que corrige variaciones técnicas. Este análisis cuantitativo complementa las visualizaciones previas y aporta una medida objetiva de la calidad del proceso de normalización.
+</p>
+
+<div class="plot-center">
+
+```{r, results='asis'}
+# Asegurarse de que ambos objetos tienen los mismos genes en el mismo orden
+common_genes <- intersect(rownames(counts_raw), rownames(counts_rpkm))
+counts_raw_filt <- counts_raw[common_genes, ]
+counts_rpkm_filt <- counts_rpkm[common_genes, ]
+
+# Calcular la correlación de Pearson por muestra
+library(purrr)
+library(tibble)
+library(ggplot2)
+
+df_cor <- tibble(
+  sample = colnames(counts_raw_filt),
+  correlation = map_dbl(colnames(counts_raw_filt), ~ cor(counts_raw_filt[[.x]], counts_rpkm_filt[[.x]], method = "pearson"))
+)
+
+# Crear el gráfico dinámico
+p <- plot_ly(
+  data = df_cor,
+  x = ~sample,
+  y = ~correlation,
+  type = "bar",
+  marker = list(color = "#3E8E7E")
+) %>%
+  layout(
+    title = list(text = "Correlación entre conteos crudos y RPKM por muestra", x = 0.5),
+    yaxis = list(title = "Correlación de Pearson", range = c(0, 1)),
+    xaxis = list(title = "", tickangle = -45),
+    plot_bgcolor = "#ffffff",
+    paper_bgcolor = "#ffffff"
+  )
+
+# Representar el gráfico
+p
+
+# Ruta para guardar el gráfico
+ruta_graph_correlacion_raw_vs_norm_html <- file.path(ruta_archives_tmp_analisis, "graph_correlacion_raw_vs_norm.html")
+
+# Guardar con título personalizado en la pestaña del navegador
+saveWidget(
+  widget = p,
+  file = ruta_graph_correlacion_raw_vs_norm_html,
+  selfcontained = TRUE,
+  title = "Correlación por muestra (Raw vs RPKM)"
+)
+```
+
+</div>
+
+```{r, results='asis'}
+cat(glue::glue('
+<p style="text-align:center;">
+  <a href="{ruta_graph_correlacion_raw_vs_norm_html}" 
+    target="_blank" 
+    class="boton-iframe">
+    <i class="fa-solid fa-chart-column"></i> Abrir gráfico en pantalla completa
+  </a>
+</p>
+'), sep = "\n")
+```
+
+
+<div class="divider"></div>
+
+<p>
+  Así, una vez analizado y comentado todo esto, podemos continuar con el siguiente apartado (<a href="5.2-evaluacion-calidad-normalizacion.html#" class="normalink">Evaluación de la calidad tras la normalización</a>) donde nos centraremos en realizar una evaluación del control de calidad de estos resultados obtenidos tras el proceso de normalización.
+<p>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  FOOTER
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<footer>
+  <a href="#" class="arriba"><i class="fa-solid fa-angles-up"></i></a>
+</footer>
+
+
+
+
+
+
+
+
+
+
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+<!--  CARGAR JAVASCRIPT PARA CHATBOT
+<!-- &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& -->
+
+<!-- Script exclusivo del chat -->
+<script type="module" src="../../../4-javascript/chatbot.js"></script>

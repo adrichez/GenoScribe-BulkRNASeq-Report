@@ -151,7 +151,7 @@ Este GIF anterior muestra la **estructura y funcionalidad del informe**, incluye
 
 ## 🔗 Informe Web
 
-Consulta la versión web interactiva del informe de ejemplo: 👉 [https://genoscribe.github.io/bulk-rnaseq-example](https://genoscribe.github.io/bulk-rnaseq-example)  
+Consulta la versión web interactiva del informe de ejemplo: 👉 [https://adrichez.github.io/GenoScribe-BulkRNASeq-Report/](https://adrichez.github.io/GenoScribe-BulkRNASeq-Report/)  
 
 **Objetivo principal:** que el informe esté disponible en la web para su **consulta y demostración**.
 

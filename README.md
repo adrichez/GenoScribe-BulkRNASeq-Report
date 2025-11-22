@@ -114,7 +114,7 @@ Si se quisiera ejecutar localmente, se usaría un script en `resources/1-essenti
 
 ---
 
-## 🎬 Demostración
+## 💡 Demostración
 
 El pipeline de **Bulk RNA-Seq** en GenoScribe genera un **informe interactivo, reproducible y auto-contenido**, estructurado en pestañas que permiten explorar los resultados de manera progresiva y clara.  
 
@@ -135,10 +135,19 @@ Este GIF anterior muestra la **estructura y funcionalidad del informe**, incluye
 
 ---
 
-## 📝 Notas
+## 🎬 Proceso de Generación del Informe Interactivo
 
-* Este repositorio es **principalmente demostrativo**, para mostrar cómo se ve un informe de GenoScribe para Bulk RNA-Seq.  
-* Para más información sobre cómo se generó este informe, los pasos, parámetros y herramientas involucradas, se puede consultar la **Guía de Usuario de GenoScribe para Bulk RNA-Seq**, disponible en el repositorio principal: [https://github.com/adrichez/GenoScribe](https://github.com/adrichez/GenoScribe).  
+Si desea ver **todo el proceso real** de creación de un informe interactivo de Bulk RNA-Seq con GenoScribe —desde la descarga del repositorio hasta la generación final del reporte— puede consultar el siguiente video demostrativo:
+
+<p align="center">
+  <a href="https://youtu.be/NgfRW_-h-4o" target="_blank">
+    <img src="https://img.youtube.com/vi/NgfRW_-h-4o/maxresdefault.jpg" alt="Video Demostrativo de Generación del Informe" width="70%" style="border-radius: 10px;">
+  </a>
+</p>
+
+<p align="center">
+  👉 <a href="https://youtu.be/NgfRW_-h-4o" target="_blank"><strong>Ver video en YouTube</strong></a>
+</p>
 
 
 
@@ -154,6 +163,20 @@ Este GIF anterior muestra la **estructura y funcionalidad del informe**, incluye
 Consulta la versión web interactiva del informe de ejemplo: 👉 [https://adrichez.github.io/GenoScribe-BulkRNASeq-Report/](https://adrichez.github.io/GenoScribe-BulkRNASeq-Report/)  
 
 **Objetivo principal:** que el informe esté disponible en la web para su **consulta y demostración**.
+
+
+
+
+
+
+<br>
+
+---
+
+## 📝 Notas
+
+* Este repositorio es **principalmente demostrativo**, para mostrar cómo se ve un informe de GenoScribe para Bulk RNA-Seq.  
+* Para más información sobre cómo se generó este informe, los pasos, parámetros y herramientas involucradas, se puede consultar la **Guía de Usuario de GenoScribe para Bulk RNA-Seq**, disponible en el repositorio principal: [https://github.com/adrichez/GenoScribe](https://github.com/adrichez/GenoScribe).  
 
 
 

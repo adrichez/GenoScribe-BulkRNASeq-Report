@@ -141,7 +141,7 @@ Si desea ver **todo el proceso real** de creación de un informe interactivo de 
 
 <p align="center">
   <a href="https://youtu.be/NgfRW_-h-4o" target="_blank">
-    <img src="https://img.youtube.com/vi/NgfRW_-h-4o/maxresdefault.jpg" alt="Video Demostrativo de Generación del Informe" width="70%" style="border-radius: 10px;">
+    <img src="https://img.youtube.com/vi/NgfRW_-h-4o/maxresdefault.jpg" alt="Video Demostrativo de Generación del Informe" width="65%" style="border-radius: 10px;">
   </a>
 </p>
 
